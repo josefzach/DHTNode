@@ -22,18 +22,6 @@
             pointer-events: all;
         }
 
-        div.tooltip {	
-           position: absolute;			
-           text-align: center;			
-           width: 60px;					
-           height: 28px;					
-           padding: 2px;				
-           font: 12px sans-serif;		
-           background: lightsteelblue;	
-           border: 0px;		
-           border-radius: 8px;			
-           pointer-events: none;			
-        }
         </style>
     </head>
     
@@ -107,11 +95,6 @@ var context = svg.append("g")
     .attr("class", "context")
     .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
-// Define the div for the tooltip
-var div = d3.select("body").append("div")	
-    .attr("class", "tooltip")				
-    .style("opacity", 0);
-
 var dataperm;
 
 d3.csv("rpi.node", type, function (error, data) {
@@ -138,63 +121,17 @@ d3.csv("rpi.node", type, function (error, data) {
         .attr("class", "line")
         .attr("d", line);
 
-  svg.append("rect")
-      .attr("class", "zoom")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-      .call(zoom);
-
-//var chartBody = svg.append("g")
-//      .attr("clip-path", "url(#clip)");
-
-//var circle = chartBody.selectAll(".dot")
-//      .data(data)
-
-      Line_chart.selectAll(".dot")
-      //Cannot read property 'append' of undefinedcircle
-      .data(data)
-      .enter()
-      .append("circle")
-      .attr("class", "dot")    
-      .attr("r", 2.5)
-      .attr("stroke-width", 0.1)
-      //.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-      //.attr("cx", function(d) { return x(d.Timestamp) })
-      //.attr("cy", function(d) { return y(d.Temperature) })    
-      .attr("transform", transform)      
-      //.style("fill", function(d) {return color(d.wt1C+d.wt2C+d.tc1C+d.tc2C); })
-      .style('cursor', 'pointer')
-      .on('mouseover', function(d) { console.log("mouseover");})
-      .on('mouseout', function(d) { console.log("mouseout");})
-    .append("title")
-      .text(function(d) { return d.Gene;});
-
-    // Add dots
+//    // Add dots
 //    svg.selectAll(".dot")
 //      .data(data)
 //      .enter()
 //      .append("circle")
-//      .attr("class", "focus")
-//      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-//      .attr("clip-path", "url(#clip)")
+//        .attr("class", "focus")
+//        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+//        .attr("clip-path", "url(#clip)")
 //        .attr("class", "dot") // Assign a class for styling
 //        .attr("cx", function(d) { return x(d.Timestamp) })
 //        .attr("cy", function(d) { return y(d.Temperature) })
-//        .on("mouseover", function(d) {		
-//            console.log("mouseover");
-//            div.transition()		
-//                .duration(200)		
-//                .style("opacity", .9);		
-//            div	.html(formatTime(d.date) + "<br/>"  + d.close)	
-//                .style("left", (d3.event.pageX) + "px")		
-//                .style("top", (d3.event.pageY - 28) + "px");	
-//            })					
-//        .on("mouseout", function(d) {		
-//            div.transition()		
-//                .duration(500)		
-//                .style("opacity", 0);	
-//        });
 
     context.append("path")
         .datum(data)
@@ -212,18 +149,12 @@ d3.csv("rpi.node", type, function (error, data) {
       .call(brush)
       .call(brush.move, x.range());
 
-//var zoom = d3.zoom()
-//    .x(x)
-//    .y(y)    
-//    .scaleExtent([0,10])
-//    .on("zoom", zoom);
-
-//var svg = d3.select("body").append("svg")
-//    .attr("width", width + margin.left + margin.right)
-//    .attr("height", height + margin.top + margin.bottom)
-//    .append("g")
-//    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-//    .call(zoom);  
+  svg.append("rect")
+      .attr("class", "zoom")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+      .call(zoom);
 
   dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
   // update chart to hold only the visible data (for performance reasons)
@@ -383,10 +314,6 @@ function reduceArray( data, drange, nPts ) {
       rdata.push(el);    
     }
     return rdata;
-}
-
-function transform(d) {
-  return "translate(" + x(d.Timestamp) +"," + y(d.Temperature)+")";
 }
 
 </script>
