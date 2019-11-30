@@ -64,32 +64,32 @@ var zoom = d3.zoom()
     .extent([[0, 0], [width, height]])
     .on("zoom", zoomed);
 
-    var line = d3.line()
-        .x(function (d) { return x(d.Timestamp); })
-        .y(function (d) { return y(d.Temperature); })
-        .curve(d3.curveMonotoneX);
+var line = d3.line()
+    .x(function (d) { return x(d.Timestamp); })
+    .y(function (d) { return y(d.Temperature); })
+    .curve(d3.curveMonotoneX);
 
-    var line2 = d3.line()
-        .x(function (d) { return x2(d.Timestamp); })
-        .y(function (d) { return y2(d.Temperature); });
+var line2 = d3.line()
+    .x(function (d) { return x2(d.Timestamp); })
+    .y(function (d) { return y2(d.Temperature); });
 
-    var clip = svg.append("defs").append("svg:clipPath")
-        .attr("id", "clip")
-        .append("svg:rect")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("x", 0)
-        .attr("y", 0); 
+var clip = svg.append("defs").append("svg:clipPath")
+    .attr("id", "clip")
+    .append("svg:rect")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("x", 0)
+    .attr("y", 0); 
 
 
-    var Line_chart = svg.append("g")
-        .attr("class", "focus")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-        .attr("clip-path", "url(#clip)");
+var Line_chart = svg.append("g")
+    .attr("class", "focus")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .attr("clip-path", "url(#clip)");
 
-    var focus = svg.append("g")
-        .attr("class", "focus")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var focus = svg.append("g")
+    .attr("class", "focus")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var context = svg.append("g")
     .attr("class", "context")
@@ -121,23 +121,10 @@ d3.csv("rpi.node", type, function (error, data) {
         .attr("class", "line")
         .attr("d", line);
 
-//    // Add dots
-//    svg.selectAll(".dot")
-//      .data(data)
-//      .enter()
-//      .append("circle")
-//        .attr("class", "focus")
-//        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-//        .attr("clip-path", "url(#clip)")
-//        .attr("class", "dot") // Assign a class for styling
-//        .attr("cx", function(d) { return x(d.Timestamp) })
-//        .attr("cy", function(d) { return y(d.Temperature) })
-
     context.append("path")
         .datum(data)
         .attr("class", "line")
         .attr("d", line2);
-
 
   context.append("g")
       .attr("class", "axis axis--x")
