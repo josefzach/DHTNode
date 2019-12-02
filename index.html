@@ -199,7 +199,7 @@ d3.csv("rpi.node", function(error, data) {
     context.append("g")
         .attr("class", "brush")
         .call(brush)
-        .call(brush.move, x.range());
+//        .call(brush.move, x.range());
 
     var focus = svg.append("g") 
         .style("display", "none")
@@ -273,23 +273,28 @@ d3.csv("rpi.node", function(error, data) {
 	function zoomed() {
 	  if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
 
+      console.log("ZOOMED")
+
 	  gX.call(xAxis.scale(d3.event.transform.rescaleX(x)));
 	  //gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
-	  var t = d3.event.transform, xt = t.rescaleX(x); //, yt = t.rescaleY(y)
+	  //var t = d3.event.transform, xt = t.rescaleX(x); //, yt = t.rescaleY(y)
 
-	  chartBody.select(".line")
-		 .attr("d",line.x(function(d) { return xt(d.Timestamp);})
-							.y(function(d) { return y(d.Temperature);}));
+	  //chartBody.select(".line")
+      //         .attr("d",line.x(function(d) { return xt(d.Timestamp);})
+      //         .y(function(d) { return y(d.Temperature);}));
+        //chartBody.select(".line").attr("d", line(data));
 
-        context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+      var t = d3.event.transform;
+      
+      xt = t.rescaleX(x2);
+      x.domain(xt.domain());
 
-        var domain = xt.domain();
+        var domain = x.domain();
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
-
+        
         console.log(drange);
-        dataslice = dataperm.slice();
-
+        
         if ( (drange[1]-drange[0]) > nMaxPts ) {
             dataslice = reduceArray( dataperm, drange, nMaxPts );
 
@@ -302,30 +307,37 @@ d3.csv("rpi.node", function(error, data) {
 		focus.select("circle.y")
 			 .classed("zoomed", true)
 			 .attr("id","one")
-			 .attr('cx', function() {return t.applyX(x(d.Timestamp)); })
+			 .attr('cx', function() {return t.applyX(x2(d.Timestamp)); })
 			 .attr('cy', function() {return y(d.Temperature); });				
 		focus.select("text")
 			 .text(formatCurrency(d.Temperature))
-			 .attr('x', function() {return t.applyX(x(d.Timestamp))+10;})
+			 .attr('x', function() {return t.applyX(x2(d.Timestamp))+10;})
 			 .attr('y', function() {return y(d.Temperature); });
+
+        focus.select(".axis--x").call(xAxis);
+        context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+
     }
 
 	function brushed() {
         if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
 
+        console.log("BRUSHED")
         var s = d3.event.selection || x2.range();
           x.domain(s.map(x2.invert, x2));
-          chartBody.select(".line").attr("d", line);
-          //focus.select(".axis--x").call(xAxis);
+          //chartBody.select(".line").attr("d", line);
+          focus.select(".axis--x").call(xAxis);
           d3.select("svg").select(".zoom").call(zoom.transform, d3.zoomIdentity
               .scale(width / (s[1] - s[0]))
               .translate(-s[0], 0));
 
-        var domain = x.domain()
+        var domain = x.domain();    
 
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() > domain[1].getTime()) ];
-        //console.log(drange);
+        
+        console.log(drange);
+        
         if ( (drange[1]-drange[0]) > nMaxPts ) {
             dataslice = reduceArray( dataperm, drange, nMaxPts );
         } else {
@@ -345,7 +357,6 @@ d3.csv("rpi.node", function(error, data) {
     dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
     // update chart to hold only the visible data (for performance reasons)
     chartBody.select(".line").attr("d", line(dataslice));
-	
 });
 
 function linSpace(startValue, stopValue, cardinality) {
