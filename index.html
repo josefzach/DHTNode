@@ -199,7 +199,7 @@ d3.csv("rpi.node", function(error, data) {
     context.append("g")
         .attr("class", "brush")
         .call(brush)
-//        .call(brush.move, x.range());
+        .call(brush.move, x.range());
 
     var focus = svg.append("g") 
         .style("display", "none")
@@ -240,21 +240,23 @@ d3.csv("rpi.node", function(error, data) {
 	
 	function mouseDate(scale) {
 		var g = d3.select("#group")._groups[0][0]
-		var x0 = scale.invert(d3.mouse(g)[0]),
+		var x0 = scale.invert(d3.mouse(g)[0]),  // d3.mouse(g)[0] ... relative x-pos in main line chart
 		i = bisectDate(dataslice, x0, 1),
 		d0 = dataslice[i - 1],
 		d1 = dataslice[i],
 		d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+        //console.log(d3.mouse(g));
 	return d;
 	}
 	
 	function mousemove() {
 		var transform = d3.zoomTransform(this);
-		var xt = transform.rescaleX(x); //, yt = transform.rescaleY(y);
+		var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
+        //console.log(xt);
 		d = mouseDate(xt);
 		focus.select("circle.y")
 			.attr('cx', function() {
-									return transform.applyX(x(d.Timestamp));
+									return transform.applyX(x2(d.Timestamp));
 								})
 			.attr('cy', function() {
 									return y(d.Temperature);
@@ -262,7 +264,7 @@ d3.csv("rpi.node", function(error, data) {
 		focus.select("text")
 			 .text(formatCurrency(d.Temperature))
 			 .attr('x', function() {
-									return transform.applyX(x(d.Timestamp))+10;
+									return transform.applyX(x2(d.Timestamp))+10;
 			 })
 			 .attr('y', function() {
 			 						return y(d.Temperature);
@@ -275,19 +277,20 @@ d3.csv("rpi.node", function(error, data) {
 
       console.log("ZOOMED")
 
-	  gX.call(xAxis.scale(d3.event.transform.rescaleX(x)));
+	  gX.call(xAxis.scale(d3.event.transform.rescaleX(x2)));
 	  //gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
 	  //var t = d3.event.transform, xt = t.rescaleX(x); //, yt = t.rescaleY(y)
 
 	  //chartBody.select(".line")
       //         .attr("d",line.x(function(d) { return xt(d.Timestamp);})
       //         .y(function(d) { return y(d.Temperature);}));
-        //chartBody.select(".line").attr("d", line(data));
+        
+//chartBody.select(".line").attr("d", line(data));
 
-      var t = d3.event.transform;
+        var t = d3.event.transform;
       
-      xt = t.rescaleX(x2);
-      x.domain(xt.domain());
+        xt = t.rescaleX(x2);
+        x.domain(xt.domain());
 
         var domain = x.domain();
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
@@ -326,7 +329,7 @@ d3.csv("rpi.node", function(error, data) {
         var s = d3.event.selection || x2.range();
           x.domain(s.map(x2.invert, x2));
           //chartBody.select(".line").attr("d", line);
-          focus.select(".axis--x").call(xAxis);
+         
           d3.select("svg").select(".zoom").call(zoom.transform, d3.zoomIdentity
               .scale(width / (s[1] - s[0]))
               .translate(-s[0], 0));
@@ -344,8 +347,9 @@ d3.csv("rpi.node", function(error, data) {
             dataslice = dataperm.slice(drange[0], drange[1]);
         }
 
-        // update chart to hold only the visible data (for performance reasons)
+        //update chart to hold only the visible data (for performance reasons)
         chartBody.select(".line").attr("d", line(dataslice));
+        //focus.select(".axis--x").call(xAxis);
 	}
 	
 	function resetted() {
