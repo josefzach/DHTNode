@@ -245,14 +245,12 @@ d3.csv("rpi.node", function(error, data) {
 		d0 = dataslice[i - 1],
 		d1 = dataslice[i],
 		d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-        //console.log(d3.mouse(g));
 	return d;
 	}
 	
 	function mousemove() {
 		var transform = d3.zoomTransform(this);
 		var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
-        //console.log(xt);
 		d = mouseDate(xt);
 		focus.select("circle.y")
 			.attr('cx', function() {
@@ -275,8 +273,6 @@ d3.csv("rpi.node", function(error, data) {
 	function zoomed() {
 	  if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
 
-      console.log("ZOOMED")
-
 	  gX.call(xAxis.scale(d3.event.transform.rescaleX(x2)));
 	  //gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
 	  //var t = d3.event.transform, xt = t.rescaleX(x); //, yt = t.rescaleY(y)
@@ -295,8 +291,6 @@ d3.csv("rpi.node", function(error, data) {
         var domain = x.domain();
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
-        
-        console.log(drange);
         
         if ( (drange[1]-drange[0]) > nMaxPts ) {
             dataslice = reduceArray( dataperm, drange, nMaxPts );
@@ -320,13 +314,13 @@ d3.csv("rpi.node", function(error, data) {
         focus.select(".axis--x").call(xAxis);
         context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
-    }
+    };
 
 	function brushed() {
         if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
 
-        console.log("BRUSHED")
         var s = d3.event.selection || x2.range();
+        //console.log(gx);
           x.domain(s.map(x2.invert, x2));
           //chartBody.select(".line").attr("d", line);
          
@@ -338,8 +332,6 @@ d3.csv("rpi.node", function(error, data) {
 
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() > domain[1].getTime()) ];
-        
-        console.log(drange);
         
         if ( (drange[1]-drange[0]) > nMaxPts ) {
             dataslice = reduceArray( dataperm, drange, nMaxPts );
