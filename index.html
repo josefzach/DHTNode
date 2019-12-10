@@ -224,14 +224,14 @@ d3.csv("rpi.node", function(error, data) {
 		  .style("text-anchor", "middle")
 		  .text("Temperature");
 
-	focus.append("circle")
+	tip.append("circle")
 		.attr("class", "y")
 		.style("fill", "none")
 		.style("stroke", "steelblue")
 		.attr("r", 4)
 		.attr("clip-path", "url(#clip)");	
 		
-	focus.append("text")
+	tip.append("text")
         .attr("class", "y")
 		.attr("dy", ".35em")
   		.attr("clip-path", "url(#clip)");
@@ -243,8 +243,8 @@ d3.csv("rpi.node", function(error, data) {
 		.attr("height", height)
         //.style("fill", "none")
         //.style("pointer-events", "all")
-        //.on("mouseover", function() { focus.style("display", null); })
-        //.on("mouseout", function() { focus.style("display", "none"); })
+        .on("mouseover", function() { tip.style("display", null); })
+        .on("mouseout", function() { tip.style("display", "none"); })
         .on("mousemove", mousemove)
         .call(zoom);
 		
@@ -283,7 +283,7 @@ d3.csv("rpi.node", function(error, data) {
 		var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
         console.log("TRANSFORM");
 		d = mouseDate(xt);
-		focus.select("circle.y")
+		tip.select("circle.y")
 			.attr('cx', function() {
 									return transform.applyX(x2(d.Timestamp));
 								})
@@ -291,7 +291,7 @@ d3.csv("rpi.node", function(error, data) {
 									return y(d.Temperature);
 								});
 
-		focus.select("text.y")
+		tip.select("text.y")
 			 .text(formatCurrency(d.Temperature))
 			 .attr('x', function() {
 									return transform.applyX(x2(d.Timestamp))+10;
@@ -331,12 +331,12 @@ d3.csv("rpi.node", function(error, data) {
         chartBody.select(".line").attr("d", line(dataslice));
 
 		//d = mouseDate(x);
-		focus.select("circle.y")
+		tip.select("circle.y")
 			 .classed("zoomed", true)
 			 .attr("id","one")
 			 .attr('cx', function() {return t.applyX(x2(d.Timestamp)); })
 			 .attr('cy', function() {return y(d.Temperature); });				
-		focus.select("text.y")
+		tip.select("text.y")
 			 .text(formatCurrency(d.Temperature))
 			 .attr('x', function() {return t.applyX(x2(d.Timestamp))+10;})
 			 .attr('y', function() {return y(d.Temperature); });
