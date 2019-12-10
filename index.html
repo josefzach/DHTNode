@@ -360,8 +360,8 @@ d3.csv("rpi.node", function(error, data) {
         var domain = x.domain();    
 
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
-                       dataperm.findIndex(d => d.Timestamp.getTime() > domain[1].getTime()) ];
-        
+                       dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
+      
         if ( (drange[1]-drange[0]) > nMaxPts ) {
             dataslice = reduceArray( dataperm, drange, nMaxPts );
         } else {
