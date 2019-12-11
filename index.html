@@ -278,13 +278,13 @@ d3.csv("rpi.node", function(error, data) {
 	}
 	
 	function mousemove() {
-		var transform = d3.zoomTransform(this);
-		var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
-        console.log(xt.domain())
-		d = mouseDate(xt);
+		//var transform = d3.zoomTransform(this);
+		//var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
+        //console.log(x.domain())
+		d = mouseDate(x);
 		tip.select("circle.y")
 			.attr('cx', function() {
-									return transform.applyX(x2(d.Timestamp));
+									return x(d.Timestamp);
 								})
 			.attr('cy', function() {
 									return y(d.Temperature);
@@ -293,7 +293,7 @@ d3.csv("rpi.node", function(error, data) {
 		tip.select("text.y")
 			 .text(formatCurrency(d.Temperature))
 			 .attr('x', function() {
-									return transform.applyX(x2(d.Timestamp))+10;
+									return x(d.Timestamp)+10;
 			 })
 			 .attr('y', function() {
 			 						return y(d.Temperature);
@@ -317,7 +317,8 @@ d3.csv("rpi.node", function(error, data) {
   
         x.domain(t.rescaleX(x2).domain());
 
-        console.log(x2.range())
+        console.log(x.domain())
+
         var domain = x.domain();
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
@@ -358,7 +359,7 @@ d3.csv("rpi.node", function(error, data) {
 
         var domain = x.domain();    
 
-        console.log(x2)
+        console.log(x.domain())
 
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
