@@ -269,19 +269,18 @@ d3.csv("rpi.node", function(error, data) {
 });
 
 	function mouseDate(scale) {
-		var g = d3.select("#group")._groups[0][0]
-		var x0 = scale.invert(d3.mouse(g)[0]),  // d3.mouse(g)[0] ... relative x-pos in main line chart
-		i = bisectDate(dataslice, x0, 1),
-		d0 = dataslice[i - 1],
-		d1 = dataslice[i],
-		d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-	return d;
+		var g = d3.select("#group")._groups[0][0];
+		var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
+		var i = bisectDate(dataslice, x0, 1);
+        i = Math.min(...[i, dataslice.length-1]);	
+		var d = x0 - dataslice[i-1].date > dataslice[i].date - x0 ? dataslice[i] : dataslice[i-1];
+	    return d;
 	}
 	
 	function mousemove() {
 		var transform = d3.zoomTransform(this);
 		var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
-        console.log("TRANSFORM");
+        console.log(xt.domain())
 		d = mouseDate(xt);
 		tip.select("circle.y")
 			.attr('cx', function() {
@@ -318,6 +317,7 @@ d3.csv("rpi.node", function(error, data) {
   
         x.domain(t.rescaleX(x2).domain());
 
+        console.log(x2.range())
         var domain = x.domain();
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
@@ -344,11 +344,10 @@ d3.csv("rpi.node", function(error, data) {
         focus.select(".axis--x").call(xAxis);
         context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
-    };
+    }
 
 	function brushed() {
         if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
-
         var s = d3.event.selection || x2.range();
         x.domain(s.map(x2.invert, x2));
           //chartBody.select(".line").attr("d", line);
@@ -358,6 +357,8 @@ d3.csv("rpi.node", function(error, data) {
 //              .translate(-s[0], 0));
 
         var domain = x.domain();    
+
+        console.log(x2)
 
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
@@ -370,6 +371,7 @@ d3.csv("rpi.node", function(error, data) {
 
         //update chart to hold only the visible data (for performance reasons)
         chartBody.select(".line").attr("d", line(dataslice));
+
         //gX.call(xAxis.scale(x2));
         focus.select(".axis--x").call(xAxis);
 	}
