@@ -182,8 +182,8 @@ d3.csv("rpi.node", function(error, data) {
 	// Scale the range of the data
 	//console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
 	//console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));	
-	x.domain(d3.extent(data, function(d) { return d.Timestamp; }));
-	y.domain([d3.min(data, function (d) { return d.Temperature; })-5, d3.max(data, function (d) { return d.Temperature; })+5]);
+	x.domain(d3.extent(dataslice, function(d) { return d.Timestamp; }));
+	y.domain([d3.min(dataslice, function (d) { return d.Temperature; })-5, d3.max(dataslice, function (d) { return d.Temperature; })+5]);
     
     x2.domain(x.domain());
     y2.domain(y.domain());	
@@ -443,7 +443,7 @@ function reduceArray( data, drange, nPts ) {
                 Temperature: tavg,
                 Humidity: "n/a"};
       rdata.push(data[ind[i]]);  
-      //rdata.push(el);  zooming creates less fluctuation using this      
+      //rdata.push(el);  zooming creates less fluctuation using this, but cannot be used in context initialization
     }
     return rdata;
 }
