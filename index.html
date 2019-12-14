@@ -37,17 +37,31 @@ body {
     pointer-events: all;
 }
 
-button {
+.reset {
   position: absolute;
   top: 20px;
   left: 80px;
 }
 
+.autoscale {
+  position: absolute;
+  top: 60px;
+  left: 80px;
+}
+
 </style>
 <body>
-<button>Reset</button>
-<svg width="1000" height="500"></svg>
+
 <script src="https://d3js.org/d3.v4.min.js"></script>
+
+<button onclick="resetted()" class="reset">Reset</button>
+<div class="autoscale">
+  <input type="checkbox" name="myCheckBox" checked>
+  <label for="myCheckBox">Autoscale Y</label>
+</div>
+<div id="dataviz_buttonTriger"></div>
+
+<svg width="1000" height="500"></svg>
 <script>
 
 var nMaxPts = 500;
@@ -258,7 +272,7 @@ d3.csv("rpi.node", function(error, data) {
 	 
 	//d3.select("#rect").call(zoom);
 	
-	d3.select("button").on("click", resetted);
+	//d3.select("button").on("click", resetted);
 
     dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
     // update chart to hold only the visible data (for performance reasons)
@@ -301,7 +315,8 @@ d3.csv("rpi.node", function(error, data) {
 	}
 	
 	function zoomed() {
-	  if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
+        // ignore zoom-by-brush
+	    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; 
 
 	  //gX.call(xAxis.scale(d3.event.transform.rescaleX(x2)));
 	  //gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
@@ -332,6 +347,7 @@ d3.csv("rpi.node", function(error, data) {
         chartBody.select(".line").attr("d", line(dataslice));
 
 		//d = mouseDate(x);
+        // update mouseover circle and text position while zoomed
 		tip.select("circle.y")
 			 .classed("zoomed", true)
 			 .attr("id","one")
@@ -342,7 +358,9 @@ d3.csv("rpi.node", function(error, data) {
 			 .attr('x', function() {return t.applyX(x2(d.Timestamp))+10;})
 			 .attr('y', function() {return y(d.Temperature); });
 
+        // update x-axis
         focus.select(".axis--x").call(xAxis);
+        // update context area
         context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
     }
@@ -351,10 +369,12 @@ d3.csv("rpi.node", function(error, data) {
         // ignore brush-by-zoom
         if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; 
         
+        // re-map domain of x-axis
         var s = d3.event.selection || x2.range();
         x.domain(s.map(x2.invert, x2));
           //chartBody.select(".line").attr("d", line);
-         
+        
+        // 
         svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
             .scale(width / (s[1] - s[0]))
             .translate(-s[0], 0));
