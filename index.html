@@ -61,7 +61,7 @@ body {
 </div>
 <div id="dataviz_buttonTriger"></div>
 
-<svg width="1000" height="500"></svg>
+<svg width="1000" height="600"></svg>
 <script>
 
 var nMaxPts = 500;
@@ -91,7 +91,7 @@ var line = d3.line()
     .defined(function(d) { return d.Temperature != 0; })
     .x(function (d) { return x(d.Timestamp); })
     .y(function (d) { return y(d.Temperature); })
-    .curve(d3.curveMonotoneX);    // disabled temporarily for performance reasons
+    .curve(d3.curveMonotoneX);
 
 var line2 = d3.line()
     .x(function (d) { return x2(d.Timestamp); })
@@ -171,6 +171,8 @@ d3.csv("rpi.node", function(error, data) {
 	
     dataperm = data;
 
+    dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
+
 	// format the data
 	data.forEach(function(d,i) {
 		d.Timestamp = parseTime(d.Timestamp);
@@ -178,8 +180,8 @@ d3.csv("rpi.node", function(error, data) {
 	});
 
 	// Scale the range of the data
-	console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
-	console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));	
+	//console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
+	//console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));	
 	x.domain(d3.extent(data, function(d) { return d.Timestamp; }));
 	y.domain([d3.min(data, function (d) { return d.Temperature; })-5, d3.max(data, function (d) { return d.Temperature; })+5]);
     
@@ -201,12 +203,12 @@ d3.csv("rpi.node", function(error, data) {
         .call(xAxis2);
 
 	chartBody.append("path")
-		.datum(data)
+		.datum(dataslice)
 		.attr("class", "line")
 		.attr("d", line);
 
     context.append("path")
-        .datum(data)
+        .datum(dataslice)
         .attr("class", "contextline")
         .attr("d", line2);
 
@@ -274,10 +276,10 @@ d3.csv("rpi.node", function(error, data) {
 	
 	//d3.select("button").on("click", resetted);
 
-    dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
     // update chart to hold only the visible data (for performance reasons)
-    chartBody.select(".line").attr("d", line(dataslice));
-
+    //chartBody.select(".line").attr("d", line(dataslice.slice(0,1000)));
+    //context.select(".contextline").attr("d", line(dataslice));
+    //y2.domain(y.domain());
     //gX.call(xAxis.scale(x2));
 
 });
@@ -332,7 +334,7 @@ d3.csv("rpi.node", function(error, data) {
   
         x.domain(t.rescaleX(x2).domain());
 
-        console.log(x.domain())
+        //console.log(x.domain())
 
         var domain = x.domain();
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
@@ -381,7 +383,7 @@ d3.csv("rpi.node", function(error, data) {
 
         var domain = x.domain();    
 
-        console.log(x.domain())
+        //console.log(x.domain())
 
         var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
                        dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
@@ -440,7 +442,8 @@ function reduceArray( data, drange, nPts ) {
       var el = {Timestamp: data[ind[i]].Timestamp, 
                 Temperature: tavg,
                 Humidity: "n/a"};
-      rdata.push(el);    
+      rdata.push(data[ind[i]]);  
+      //rdata.push(el);  zooming creates less fluctuation using this      
     }
     return rdata;
 }
