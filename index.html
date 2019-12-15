@@ -39,14 +39,10 @@ body {
 
 .reset {
   position: absolute;
-  top: 20px;
-  left: 80px;
 }
 
 .autoscale {
   position: absolute;
-  top: 60px;
-  left: 80px;
 }
 
 </style>
@@ -54,12 +50,13 @@ body {
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 
-<button onclick="resetted()" class="reset">Reset</button>
-<div class="autoscale">
+<button id="reset" class="reset" onclick="resetted()">Reset</button>
+<div id="autoscale" class="autoscale">
   <input type="checkbox" name="myCheckBox" checked>
   <label for="myCheckBox">Autoscale Y</label>
 </div>
-<div id="dataviz_buttonTriger"></div>
+
+<!div id="dataviz_buttonTriger"><!/div>
 
 <svg width="1000" height="600"></svg>
 <script>
@@ -74,7 +71,8 @@ var svg = d3.select("svg"),
     focusHeight = +svg.attr("height") * 0.7,
     contextHeight = +svg.attr("height") - focusHeight;
 
-var svg = d3.select("svg"),     
+var svg = d3.select("svg"),  
+    totalWidth = +svg.attr("width"),
     margin = {top: 20, right: 20, bottom: contextHeight, left: 40},
     width = +svg.attr("width") - margin.left - margin.right,
     height = +svg.attr("height") - margin.top - margin.bottom,
@@ -166,8 +164,14 @@ svg = d3.select('#chart')
         .attr("class", "tip")
         .style("display", "none")
 
+    document.getElementById("reset").style.visibility = "hidden";
+    document.getElementById("autoscale").style.visibility = "hidden";
+
 var dataperm;
 var dataslice;
+
+//var rbtn = document.getElementById('reset'); 
+//    rbtn.setAttribute('style', 'top:100px;left:150px;');
 
 // Get the data
 d3.csv("rpi.node", function(error, data) {
@@ -274,8 +278,15 @@ d3.csv("rpi.node", function(error, data) {
 		  
 	focus.append("g")
 	  .call(d3.axisLeft(y).ticks(0));
+ 
+    document.getElementById("reset").style.visibility = "";
+    document.getElementById("reset").style.top = "30px";
+    document.getElementById("reset").style.left = totalWidth-100+"px";
 
-	 
+    document.getElementById("autoscale").style.visibility = "";
+    document.getElementById("autoscale").style.top = "60px";
+    document.getElementById("autoscale").style.left = totalWidth-100+"px";
+
 	//d3.select("#rect").call(zoom);
 	
 	//d3.select("button").on("click", resetted);
