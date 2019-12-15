@@ -52,7 +52,7 @@ body {
 
 <button id="reset" class="reset" onclick="resetted()">Reset</button>
 <div id="autoscale" class="autoscale">
-  <input type="checkbox" name="myCheckBox" checked>
+  <input type="checkbox" id="myCheckBox" name="myCheckBox" onclick="on_checkbox()" checked>
   <label for="myCheckBox">Autoscale Y</label>
 </div>
 
@@ -66,6 +66,8 @@ var nMaxPts = 500;
 //    margin2 = {top: 20, right: 20, bottom: 30, left: 40},
 //    width = +svg.attr("width") - margin.left - margin.right,
 //    height = +svg.attr("height") - margin.top - margin.bottom;
+
+var isChecked = true;
 
 var svg = d3.select("svg"),     
     focusHeight = +svg.attr("height") * 0.7,
@@ -191,7 +193,7 @@ d3.csv("rpi.node", function(error, data) {
 	//console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
 	//console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));	
 	x.domain(d3.extent(dataslice, function(d) { return d.Timestamp; }));
-	y.domain([d3.min(dataslice, function (d) { return d.Temperature; })-5, d3.max(dataslice, function (d) { return d.Temperature; })+5]);
+	y.domain(getYRange(dataslice));
     
     x2.domain(x.domain());
     y2.domain(y.domain());	
@@ -363,6 +365,10 @@ d3.csv("rpi.node", function(error, data) {
         }
         chartBody.select(".line").attr("d", line(dataslice));
 
+        if ( isChecked == true ) {
+            y.domain(getYRange(dataslice));
+        } 
+
 		//d = mouseDate(x);
         // update mouseover circle and text position while zoomed
 		tip.select("circle.y")
@@ -412,6 +418,10 @@ d3.csv("rpi.node", function(error, data) {
         //update chart to hold only the visible data (for performance reasons)
         chartBody.select(".line").attr("d", line(dataslice));
 
+        if ( isChecked == true ) {
+            y.domain(getYRange(dataslice));
+        } 
+
         //gX.call(xAxis.scale(x2));
         focus.select(".axis--x").call(xAxis);
 	}
@@ -421,6 +431,22 @@ d3.csv("rpi.node", function(error, data) {
 		  .duration(750)
 		  .call(zoom.transform, d3.zoomIdentity);
 	}
+
+    function on_checkbox() {
+      // Get the checkbox
+      var checkBox = document.getElementById("myCheckBox");
+      // Get the output text
+      var text = document.getElementById("text");
+
+      // If the checkbox is checked, display the output text
+      if (checkBox.checked == true){
+        isChecked = true;
+        y.domain(getYRange(dataslice));     // does not scale - why??
+        console.log(getYRange(dataslice));
+      } else {
+        isChecked = false;
+      }
+    }
 
 function linSpace(startValue, stopValue, cardinality) {
   var arr = [];
@@ -461,6 +487,10 @@ function reduceArray( data, drange, nPts ) {
       //rdata.push(el);  zooming creates less fluctuation using this, but cannot be used in context initialization
     }
     return rdata;
+}
+
+function getYRange( data ){
+    return [d3.min(data, function (d) { return d.Temperature; })-5, d3.max(data, function (d) { return d.Temperature; })+5];
 }
 
 </script>
