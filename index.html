@@ -182,9 +182,11 @@ d3.csv("rpi.node", function(error, data) {
     dataperm = data;
 
     dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
+    
+    console.log(dataslice);
 
 	// format the data
-	data.forEach(function(d,i) {
+	dataperm.forEach(function(d,i) {
 		d.Timestamp = parseTime(d.Timestamp);
 		d.Temperature = +d.Temperature;
 	});
@@ -383,6 +385,7 @@ d3.csv("rpi.node", function(error, data) {
 
         // update x-axis
         focus.select(".axis--x").call(xAxis);
+        focus.select(".axis--y").call(yAxis);
         // update context area
         context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
@@ -424,6 +427,7 @@ d3.csv("rpi.node", function(error, data) {
 
         //gX.call(xAxis.scale(x2));
         focus.select(".axis--x").call(xAxis);
+        focus.select(".axis--y").call(yAxis);
 	}
 	
 	function resetted() {
@@ -441,8 +445,8 @@ d3.csv("rpi.node", function(error, data) {
       // If the checkbox is checked, display the output text
       if (checkBox.checked == true){
         isChecked = true;
-        y.domain(getYRange(dataslice));     // does not scale - why??
-        console.log(getYRange(dataslice));
+        y.domain(getYRange(dataslice));
+        // update plot
         chartBody.select(".line").attr("d", line(dataslice));
       } else {
         isChecked = false;
@@ -477,16 +481,24 @@ function reduceArray( data, drange, nPts ) {
         });
 
     var rdata = [];
+    var el;
     for (i = 0; i < ind.length-1; i=i+1) {
       // using max has performance advantage?
-      //var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
-      var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
-      var el = {Timestamp: data[ind[i]].Timestamp, 
-                Temperature: tavg,
-                Humidity: "n/a"};
-      rdata.push(data[ind[i]]);  
-      //rdata.push(el);  zooming creates less fluctuation using this, but cannot be used in context initialization
+      var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
+      //var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
+      //el = {Timestamp: data[ind[i]].Timestamp, 
+      //          Temperature: tavg,
+      //          Humidity: "n/a"};
+      //el = {...data[ind[i]]};
+      //el = jQuery.extend(true, {}, data[ind[i]]);
+      el = data[ind[i]];
+      el.Temperature = tavg;      
+      rdata.push(el);
+      //rdata[i].Temperature = tavg; 
+      //rdata2.push(el);  //zooming creates less fluctuation using this, but cannot be used in context initialization
     }
+    //console.log(typeof(data[ind[i]]));
+    //console.log(typeof(el));
     return rdata;
 }
 
