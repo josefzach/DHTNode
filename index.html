@@ -181,9 +181,8 @@ d3.csv("rpi.node", function(error, data) {
 	
     dataperm = data;
 
-    dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
-    
-    console.log(dataslice);
+    //dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
+    console.log(dataperm);
 
 	// format the data
 	dataperm.forEach(function(d,i) {
@@ -194,8 +193,8 @@ d3.csv("rpi.node", function(error, data) {
 	// Scale the range of the data
 	//console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
 	//console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));	
-	x.domain(d3.extent(dataslice, function(d) { return d.Timestamp; }));
-	y.domain(getYRange(dataslice));
+	x.domain(d3.extent(dataperm, function(d) { return d.Timestamp; }));
+	y.domain(getYRange(dataperm));
     
     x2.domain(x.domain());
     y2.domain(y.domain());	
@@ -215,12 +214,12 @@ d3.csv("rpi.node", function(error, data) {
         .call(xAxis2);
 
 	chartBody.append("path")
-		.datum(dataslice)
+		.datum(dataperm)
 		.attr("class", "line")
 		.attr("d", line);
 
     context.append("path")
-        .datum(dataslice)
+        .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
         .attr("class", "contextline")
         .attr("d", line2);
 
@@ -481,24 +480,27 @@ function reduceArray( data, drange, nPts ) {
         });
 
     var rdata = [];
-    var el;
+    var el;//, el2;
+    //var rdata2 = [];
     for (i = 0; i < ind.length-1; i=i+1) {
       // using max has performance advantage?
-      var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
-      //var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
+      //var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
+      var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
       //el = {Timestamp: data[ind[i]].Timestamp, 
       //          Temperature: tavg,
       //          Humidity: "n/a"};
-      //el = {...data[ind[i]]};
+      el = {...data[ind[i]]};
+      //console.log(el);
       //el = jQuery.extend(true, {}, data[ind[i]]);
-      el = data[ind[i]];
+      //el = data[ind[i]];
+      //console.log(el);
       el.Temperature = tavg;      
       rdata.push(el);
       //rdata[i].Temperature = tavg; 
-      //rdata2.push(el);  //zooming creates less fluctuation using this, but cannot be used in context initialization
+      //rdata2.push(el2);  //zooming creates less fluctuation using this, but cannot be used in context initialization
     }
-    //console.log(typeof(data[ind[i]]));
-    //console.log(typeof(el));
+    //console.log(rdata);
+    //console.log(rdata2);
     return rdata;
 }
 
