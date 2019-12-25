@@ -118,7 +118,8 @@ var line = d3.line()
     
 var line2 = d3.line()
     .x(function (d) { return x2(d.Timestamp); })
-    .y(function (d) { return y2(d.Temperature); });
+    .y(function (d) { return y2(d.Temperature); })
+    .curve(d3.curveMonotoneX);
 
 //svg = d3.select('#chart')
 //    .append("svg:svg")
