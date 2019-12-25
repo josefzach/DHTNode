@@ -211,7 +211,7 @@ d3.csv("rpi.node", function(error, data) {
 	// format the data
 	dataperm.forEach(function(d,i) {
 		d.Timestamp = parseTime(d.Timestamp);
-		d.Temperature = +d.Temperature;
+		d.Temperature = +20*d.Temperature;
 	});
 
 	// Scale the range of the data
@@ -341,7 +341,7 @@ d3.csv("rpi.node", function(error, data) {
 		var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
 		var i = bisectDate(dataslice, x0, 1);
         i = Math.min(...[i, dataslice.length-1]);	
-		var d = x0 - dataslice[i-1].date > dataslice[i].date - x0 ? dataslice[i] : dataslice[i-1];
+		var d = x0 - dataslice[i-1].Timestamp > dataslice[i].Timestamp - x0 ? dataslice[i] : dataslice[i-1];
 	    return d;
 	}
 	
