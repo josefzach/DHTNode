@@ -2,22 +2,22 @@
 <meta charset="utf-8">
 
 <!div id="chart"><!/div>
+
 <style>
 body {
-    font: 10px Arial;
-	
+    font: 10px Arial; 
 }
 
 .view {
-  fill: rgba(255, 255, 255, 0.2);
+    fill: rgba(255, 255, 255, 0.2);
 }
 
 .axis path {
-  display: none;
+    display: none;
 }
 
 .axis line {
-  stroke-opacity: 0.3;
+    stroke-opacity: 0.3;
 }
 
 .line {
@@ -46,27 +46,29 @@ body {
 }
 
 .reset {
-  position: absolute;
+    position: absolute;
 }
 
 .autoscale {
-  position: absolute;
+    position: absolute;
 }
 
 </style>
+
 <body>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 
 <button id="reset" class="reset" onclick="resetted()">Reset</button>
 <div id="autoscale" class="autoscale">
-  <input type="checkbox" id="myCheckBox" name="myCheckBox" onclick="on_checkbox()" checked>
-  <label for="myCheckBox">Autoscale Y</label>
+    <input type="checkbox" id="myCheckBox" name="myCheckBox" onclick="on_checkbox()" checked>
+    <label for="myCheckBox">Autoscale Y</label>
 </div>
 
 <!div id="dataviz_buttonTriger"><!/div>
 
 <svg width="1000" height="600"></svg>
+
 <script>
 
 var nMaxPts = 100;
@@ -91,14 +93,14 @@ var svg = d3.select("svg")
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .append("svg:g")
-	.attr("id","group")
+    .attr("id","group")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
-	bisectDate = d3.bisector(function(d) { return d.Timestamp; }).left;
-	formatValue = d3.format(",.2f"),
+    bisectDate = d3.bisector(function(d) { return d.Timestamp; }).left;
+    formatValue = d3.format(",.2f"),
     formatCurrency = function(d) { return formatValue(d) + "°"; };
-	
+    
 var x = d3.scaleTime().range([0, width]),
     x2 = d3.scaleTime().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
@@ -126,7 +128,7 @@ var line2 = d3.line()
 //    .attr('width', width + margin.left + margin.right)
 //    .attr('height', height + margin.top + margin.bottom)
 //    .append("svg:g")
-//	.attr("id","group")
+//    .attr("id","group")
 //    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 //var clip = svg.append("defs").append("svg:clipPath")
@@ -137,62 +139,62 @@ var line2 = d3.line()
 //    .attr("x", 0)
 //    .attr("y", 0); 
 
-    var zoom = d3.zoom()
+var zoom = d3.zoom()
     .scaleExtent([1, Infinity])
     .translateExtent([[0, 0], [width, height]])
     .extent([[0, 0], [width, height]])
-    .on("zoom", zoomed);	
+    .on("zoom", zoomed);    
 
-    var brush = d3.brushX()
+var brush = d3.brushX()
     .extent([[0, 0], [width, height2]])
     .on("brush end", brushed);
-	
-	var xAxis = d3.axisBottom(x)
-		.ticks((width + 2) / (height + 2) * 5)
-		.tickSize(-height)
-		.tickPadding(10);
+    
+var xAxis = d3.axisBottom(x)
+    .ticks((width + 2) / (height + 2) * 5)
+    .tickSize(-height)
+    .tickPadding(10);
 
-    var xAxis2 = d3.axisBottom(x2);
-//		.ticks((width + 2) / (height2 + 2) * 5)
-//		.tickSize(-height2)
-//		.tickPadding(10);
-			
-	var yAxis = d3.axisRight(y)
-		.ticks(5)
-		.tickSize(width)
-		.tickPadding(- 20 - width);
+var xAxis2 = d3.axisBottom(x2);
+//        .ticks((width + 2) / (height2 + 2) * 5)
+//        .tickSize(-height2)
+//        .tickPadding(10);
+            
+var yAxis = d3.axisRight(y)
+    .ticks(5)
+    .tickSize(width)
+    .tickPadding(- 20 - width);
 
-//	var yAxisRight = d3.axisLeft(y)
-//		.ticks(5)
-//		.tickSize(width)
-//		.tickPadding(- 20 - width);
+//    var yAxisRight = d3.axisLeft(y)
+//        .ticks(5)
+//        .tickSize(width)
+//        .tickPadding(- 20 - width);
         
-	var view = svg.append("rect")
-		.attr("class", "view")
-		.attr("x", 0.5)
-		.attr("y", 0.5)
-		.attr("width", width - 1)
-		.attr("height", height - 1);
+var view = svg.append("rect")
+    .attr("class", "view")
+    .attr("x", 0.5)
+    .attr("y", 0.5)
+    .attr("width", width - 1)
+    .attr("height", height - 1);
 
-	var chartBody = svg.append("g")
-        .attr("class", "focus")
-		.attr("clip-path", "url(#clip)");
+var chartBody = svg.append("g")
+    .attr("class", "focus")
+    .attr("clip-path", "url(#clip)");
 
-    var focus = svg.append("g") 
-        .attr("class", "focus")
-        //.style("display", "none")
-        //.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var focus = svg.append("g") 
+    .attr("class", "focus")
+    //.style("display", "none")
+    //.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var context = svg.append("g")
-        .attr("class", "context")
-        .attr("transform", "translate(" + 0 + "," + margin2.top + ")");
+var context = svg.append("g")
+    .attr("class", "context")
+    .attr("transform", "translate(" + 0 + "," + margin2.top + ")");
 
-    var tip = svg.append("g") 
-        .attr("class", "tip")
-        .style("display", "none")
+var tip = svg.append("g") 
+    .attr("class", "tip")
+    .style("display", "none")
 
-    document.getElementById("reset").style.visibility = "hidden";
-    document.getElementById("autoscale").style.visibility = "hidden";
+document.getElementById("reset").style.visibility = "hidden";
+document.getElementById("autoscale").style.visibility = "hidden";
 
 var dataperm;
 var dataslice;
@@ -202,56 +204,56 @@ var dataslice;
 
 // Get the data
 d3.csv("rpi.node", function(error, data) {
-	if (error) throw error;
-	
+    if (error) throw error;
+    
     dataperm = data;
 
     //dataslice = reduceArray( dataperm, [0,dataperm.length], nMaxPts );
     console.log(dataperm);
 
-	// format the data
-	dataperm.forEach(function(d,i) {
-		d.Timestamp = parseTime(d.Timestamp);
-		d.Temperature = +20*d.Temperature;
-	});
+    // format the data
+    dataperm.forEach(function(d,i) {
+        d.Timestamp = parseTime(d.Timestamp);
+        d.Temperature = +20*d.Temperature;
+    });
 
-	// Scale the range of the data
-	//console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
-	//console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));	
-	x.domain(d3.extent(dataperm, function(d) { return d.Timestamp; }));
-	y.domain(getYRange(dataperm));
+    // Scale the range of the data
+    //console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
+    //console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));    
+    x.domain(d3.extent(dataperm, function(d) { return d.Timestamp; }));
+    y.domain(getYRange(dataperm));
     
     x2.domain(x.domain());
-    y2.domain(y.domain());	
+    y2.domain(y.domain());    
 
-	focus.append("g")
-		.attr("class", "axis axis--x")
-		.attr("transform", "translate(0," + height + ")")
-		.call(xAxis);
+    focus.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
 
-	focus.append("g")
-		.attr("class", "axis axis--y")
-		.call(yAxis);
+    focus.append("g")
+        .attr("class", "axis axis--y")
+        .call(yAxis);
 
-//	focus.append("g")
-//		.attr("class", "axis axis--y")
+//    focus.append("g")
+//        .attr("class", "axis axis--y")
 //        .attr("transform", "translate(" + width + ",0)")
-//		.call(yAxisRight);
+//        .call(yAxisRight);
         
     context.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + height2 + ")")
         .call(xAxis2);
 
-	chartBody.append("path")
-		.datum(dataperm)
-		.attr("class", "line")
-		.attr("d", line);
+    chartBody.append("path")
+        .datum(dataperm)
+        .attr("class", "line")
+        .attr("d", line);
 
-//	chartBody.append("path")
-//		.datum(dataperm)
-//		.attr("class", "line_humidity")
-//		.attr("d", line_humidity);
+//    chartBody.append("path")
+//        .datum(dataperm)
+//        .attr("class", "line_humidity")
+//        .attr("d", line_humidity);
         
     context.append("path")
         .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
@@ -262,60 +264,59 @@ d3.csv("rpi.node", function(error, data) {
         .attr("class", "brush")
         .call(brush)
         .call(brush.move, x.range());
-		
-	svg.append("defs").append("clipPath")
-		.attr("id", "clip")
-	    .append("rect")
-		.attr("width", width)
-		.attr("height", height);
+        
+    svg.append("defs").append("clipPath")
+        .attr("id", "clip")
+        .append("rect")
+        .attr("width", width)
+        .attr("height", height);
 
-	svg.append("text")             
-	  .attr("transform",
-			"translate(" + (width/2) + " ," + (height + margin.top + 20) + ")")
-	  .style("font-size","12px")
-	  .style("font-family", "sans-serif")
-	  .style("text-anchor", "middle")
-	  .text("Date/Time");
-	  
-	svg.append("text")
-		  .attr("transform", "rotate(-90)")
-		  .attr("y", 0 - margin.left/1)
-		  .attr("x",0 - (height / 2))
-		  .attr("dy", "1em")
-		  .style("font-size","12px")
-		  .style("text-anchor", "middle")
-		  .text("Temperature");
+    svg.append("text")             
+        .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 20) + ")")
+        .style("font-size","12px")
+        .style("font-family", "sans-serif")
+        .style("text-anchor", "middle")
+        .text("Date/Time");
+      
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left/1)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("font-size","12px")
+        .style("text-anchor", "middle")
+        .text("Temperature");
 
-	tip.append("circle")
-		.attr("class", "y")
-		.style("fill", "none")
-		.style("stroke", "steelblue")
-		.attr("r", 4)
-		.attr("clip-path", "url(#clip)");	
-		
-	tip.append("text")
+    tip.append("circle")
         .attr("class", "y")
-		.attr("dy", ".35em")
-  		.attr("clip-path", "url(#clip)");
+        .style("fill", "none")
+        .style("stroke", "steelblue")
+        .attr("r", 4)
+        .attr("clip-path", "url(#clip)");    
+        
+    tip.append("text")
+        .attr("class", "y")
+        .attr("dy", ".35em")
+          .attr("clip-path", "url(#clip)");
 
-	svg.append("rect")
-		.attr("id","rect")
+    svg.append("rect")
+        .attr("id","rect")
         .attr("class", "zoom")
-		.attr("width", width)
-		.attr("height", height)
+        .attr("width", width)
+        .attr("height", height)
         //.style("fill", "none")
         //.style("pointer-events", "all")
         .on("mouseover", function() { tip.style("display", null); })
         .on("mouseout", function() { tip.style("display", "none"); })
         .on("mousemove", mousemove)
         .call(zoom);
-		
-	focus.append("g")
-		  .attr("transform", "translate(0," + height + ")")
-		  .call(d3.axisBottom(x).ticks(0));
-		  
-	focus.append("g")
-	  .call(d3.axisLeft(y).ticks(0));
+        
+    focus.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).ticks(0));
+          
+    focus.append("g")
+        .call(d3.axisLeft(y).ticks(0));
  
     document.getElementById("reset").style.visibility = "";
     document.getElementById("reset").style.top = "30px";
@@ -325,9 +326,9 @@ d3.csv("rpi.node", function(error, data) {
     document.getElementById("autoscale").style.top = "60px";
     document.getElementById("autoscale").style.left = totalWidth-100+"px";
 
-	//d3.select("#rect").call(zoom);
-	
-	//d3.select("button").on("click", resetted);
+    //d3.select("#rect").call(zoom);
+    
+    //d3.select("button").on("click", resetted);
 
     // update chart to hold only the visible data (for performance reasons)
     //chartBody.select(".line").attr("d", line(dataslice.slice(0,1000)));
@@ -337,171 +338,170 @@ d3.csv("rpi.node", function(error, data) {
 
 });
 
-	function mouseDate(scale) {
-		var g = d3.select("#group")._groups[0][0];
-		var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
-		var i = bisectDate(dataslice, x0, 1);
-        i = Math.min(...[i, dataslice.length-1]);	
-		var d = x0 - dataslice[i-1].Timestamp > dataslice[i].Timestamp - x0 ? dataslice[i] : dataslice[i-1];
-	    return d;
-	}
-	
-	function mousemove() {
-		//var transform = d3.zoomTransform(this);
-		//var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
-        //console.log(x.domain())
-		d = mouseDate(x);
-		tip.select("circle.y")
-			.attr('cx', function() {
-									return x(d.Timestamp);
-								})
-			.attr('cy', function() {
-									return y(d.Temperature);
-								});
+function mouseDate(scale) {
+    var g = d3.select("#group")._groups[0][0];
+    var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
+    var i = bisectDate(dataslice, x0, 1);
+    i = Math.min(...[i, dataslice.length-1]);    
+    var d = x0 - dataslice[i-1].Timestamp > dataslice[i].Timestamp - x0 ? dataslice[i] : dataslice[i-1];
+    return d;
+}
 
-		tip.select("text.y")
-			 .text(formatCurrency(d.Temperature))
-			 .attr('x', function() {
-									return x(d.Timestamp)+10;
-			 })
-			 .attr('y', function() {
-			 						return y(d.Temperature);
-			 });
-	}
-	
-	function zoomed() {
-        // ignore zoom-by-brush
-	    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; 
+function mousemove() {
+    //var transform = d3.zoomTransform(this);
+    //var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
+    //console.log(x.domain())
+    d = mouseDate(x);
+    tip.select("circle.y")
+        .attr('cx', function() {
+                                return x(d.Timestamp);
+                            })
+        .attr('cy', function() {
+                                return y(d.Temperature);
+                            });
 
-	  //gX.call(xAxis.scale(d3.event.transform.rescaleX(x2)));
-	  //gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
-	  //var t = d3.event.transform, xt = t.rescaleX(x); //, yt = t.rescaleY(y)
+    tip.select("text.y")
+         .text(formatCurrency(d.Temperature))
+         .attr('x', function() {
+                                return x(d.Timestamp)+10;
+         })
+         .attr('y', function() {
+                                 return y(d.Temperature);
+         });
+}
 
-	  //chartBody.select(".line")
-      //         .attr("d",line.x(function(d) { return xt(d.Timestamp);})
-      //         .y(function(d) { return y(d.Temperature);}));
-        
+function zoomed() {
+    // ignore zoom-by-brush
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; 
+
+  //gX.call(xAxis.scale(d3.event.transform.rescaleX(x2)));
+  //gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
+  //var t = d3.event.transform, xt = t.rescaleX(x); //, yt = t.rescaleY(y)
+
+  //chartBody.select(".line")
+  //         .attr("d",line.x(function(d) { return xt(d.Timestamp);})
+  //         .y(function(d) { return y(d.Temperature);}));
+    
 //chartBody.select(".line").attr("d", line(data));
 
-        var t = d3.event.transform;
+    var t = d3.event.transform;
+
+    x.domain(t.rescaleX(x2).domain());
+
+    //console.log(x.domain())
+
+    var domain = x.domain();
+    var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
+                   dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
+    
+    if ( (drange[1]-drange[0]) > nMaxPts ) {
+        dataslice = reduceArray( dataperm, drange, nMaxPts );
+
+    } else {
+        dataslice = dataperm.slice(drange[0], drange[1]);
+    }
+    chartBody.select(".line").attr("d", line(dataslice));
+
+    if ( isChecked == true ) {
+        y.domain(getYRange(dataslice));
+    } 
+
+    //d = mouseDate(x);
+    // update mouseover circle and text position while zoomed
+    tip.select("circle.y")
+        .classed("zoomed", true)
+        .attr("id","one")
+        .attr('cx', function() {return x(d.Timestamp); })
+        .attr('cy', function() {return y(d.Temperature); });                
+    tip.select("text.y")
+        .text(formatCurrency(d.Temperature))
+        .attr('x', function() {return x(d.Timestamp)+10;})
+        .attr('y', function() {return y(d.Temperature); });
+
+    // update x-axis
+    focus.select(".axis--x").call(xAxis);
+    focus.select(".axis--y").call(yAxis);
+    // update context area
+    context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+}
+
+function brushed() {
+    // ignore brush-by-zoom
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; 
+    
+    // re-map domain of x-axis
+    var s = d3.event.selection || x2.range();
+    x.domain(s.map(x2.invert, x2));
+      //chartBody.select(".line").attr("d", line);
+    
+    // 
+    svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
+        .scale(width / (s[1] - s[0]))
+        .translate(-s[0], 0));
+
+    var domain = x.domain();    
+
+    //console.log(x.domain())
+
+    var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
+                   dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
   
-        x.domain(t.rescaleX(x2).domain());
-
-        //console.log(x.domain())
-
-        var domain = x.domain();
-        var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
-                       dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
-        
-        if ( (drange[1]-drange[0]) > nMaxPts ) {
-            dataslice = reduceArray( dataperm, drange, nMaxPts );
-
-        } else {
-            dataslice = dataperm.slice(drange[0], drange[1]);
-        }
-        chartBody.select(".line").attr("d", line(dataslice));
-
-        if ( isChecked == true ) {
-            y.domain(getYRange(dataslice));
-        } 
-
-		//d = mouseDate(x);
-        // update mouseover circle and text position while zoomed
-		tip.select("circle.y")
-			 .classed("zoomed", true)
-			 .attr("id","one")
-			 .attr('cx', function() {return x(d.Timestamp); })
-			 .attr('cy', function() {return y(d.Temperature); });				
-		tip.select("text.y")
-			 .text(formatCurrency(d.Temperature))
-			 .attr('x', function() {return x(d.Timestamp)+10;})
-			 .attr('y', function() {return y(d.Temperature); });
-
-        // update x-axis
-        focus.select(".axis--x").call(xAxis);
-        focus.select(".axis--y").call(yAxis);
-        // update context area
-        context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
-
+    if ( (drange[1]-drange[0]) > nMaxPts ) {
+        dataslice = reduceArray( dataperm, drange, nMaxPts );
+    } else {
+        dataslice = dataperm.slice(drange[0], drange[1]);
     }
 
-	function brushed() {
-        // ignore brush-by-zoom
-        if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; 
-        
-        // re-map domain of x-axis
-        var s = d3.event.selection || x2.range();
-        x.domain(s.map(x2.invert, x2));
-          //chartBody.select(".line").attr("d", line);
-        
-        // 
-        svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
-            .scale(width / (s[1] - s[0]))
-            .translate(-s[0], 0));
+    //update chart to hold only the visible data (for performance reasons)
+    chartBody.select(".line").attr("d", line(dataslice));
 
-        var domain = x.domain();    
+    if ( isChecked == true ) {
+        y.domain(getYRange(dataslice));
+    } 
 
-        //console.log(x.domain())
+    //gX.call(xAxis.scale(x2));
+    focus.select(".axis--x").call(xAxis);
+    focus.select(".axis--y").call(yAxis);
+}
 
-        var drange = [ dataperm.findIndex(d => d.Timestamp.getTime() > domain[0].getTime()), 
-                       dataperm.findIndex(d => d.Timestamp.getTime() >= domain[1].getTime()) ];
-      
-        if ( (drange[1]-drange[0]) > nMaxPts ) {
-            dataslice = reduceArray( dataperm, drange, nMaxPts );
-        } else {
-            dataslice = dataperm.slice(drange[0], drange[1]);
-        }
+function resetted() {
+    d3.select("#rect").transition()
+        .duration(750)
+        .call(zoom.transform, d3.zoomIdentity);
+}
 
-        //update chart to hold only the visible data (for performance reasons)
-        chartBody.select(".line").attr("d", line(dataslice));
+function on_checkbox() {
+  // Get the checkbox
+  var checkBox = document.getElementById("myCheckBox");
+  // Get the output text
+  var text = document.getElementById("text");
 
-        if ( isChecked == true ) {
-            y.domain(getYRange(dataslice));
-        } 
-
-        //gX.call(xAxis.scale(x2));
-        focus.select(".axis--x").call(xAxis);
-        focus.select(".axis--y").call(yAxis);
-	}
-	
-	function resetted() {
-	  d3.select("#rect").transition()
-		  .duration(750)
-		  .call(zoom.transform, d3.zoomIdentity);
-	}
-
-    function on_checkbox() {
-      // Get the checkbox
-      var checkBox = document.getElementById("myCheckBox");
-      // Get the output text
-      var text = document.getElementById("text");
-
-      // If the checkbox is checked, display the output text
-      if (checkBox.checked == true){
+    // If the checkbox is checked, display the output text
+    if (checkBox.checked == true){
         isChecked = true;
         y.domain(getYRange(dataslice));
         // update plot
         chartBody.select(".line").attr("d", line(dataslice));
-      } else {
+    } else {
         isChecked = false;
-      }
     }
+}
 
 function linSpace(startValue, stopValue, cardinality) {
-  var arr = [];
-  var step = (stopValue - startValue) / (cardinality - 1);
-  for (var i = 0; i < cardinality; i++) {
-    arr.push(startValue + (step * i));
-  }
-  return arr;
+    var arr = [];
+    var step = (stopValue - startValue) / (cardinality - 1);
+    for (var i = 0; i < cardinality; i++) {
+        arr.push(startValue + (step * i));
+    }
+    return arr;
 }
 
 function getTemp( array ) {
-  var tarray = [];
-  for (var i=0; i < array.length; i=i+1) {
-    tarray[i] = parseFloat(array[i].Temperature);
-  }
-  return tarray;
+    var tarray = [];
+    for (var i=0; i < array.length; i=i+1) {
+        tarray[i] = parseFloat(array[i].Temperature);
+    }
+    return tarray;
 }
 
 const arrAvg = arr => arr.reduce((a,b) => a + b, 0) / arr.length
@@ -523,21 +523,21 @@ function reduceArray( data, drange, nPts ) {
     var el;//, el2;
     //var rdata2 = [];
     for (i = 0; i < ind.length-1; i=i+1) {
-      // using max has performance advantage?
-      //var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
-      var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
-      //el = {Timestamp: data[ind[i]].Timestamp, 
-      //          Temperature: tavg,
-      //          Humidity: "n/a"};
-      el = {...data[ind[i]]};
-      //console.log(el);
-      //el = jQuery.extend(true, {}, data[ind[i]]);
-      //el = data[ind[i]];
-      //console.log(el);
-      el.Temperature = tavg;      
-      rdata.push(el);
-      //rdata[i].Temperature = tavg; 
-      //rdata2.push(el2);  //zooming creates less fluctuation using this, but cannot be used in context initialization
+        // using max has performance advantage?
+        //var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
+        var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
+        //el = {Timestamp: data[ind[i]].Timestamp, 
+        //          Temperature: tavg,
+        //          Humidity: "n/a"};
+        el = {...data[ind[i]]};
+        //console.log(el);
+        //el = jQuery.extend(true, {}, data[ind[i]]);
+        //el = data[ind[i]];
+        //console.log(el);
+        el.Temperature = tavg;      
+        rdata.push(el);
+        //rdata[i].Temperature = tavg; 
+        //rdata2.push(el2);  //zooming creates less fluctuation using this, but cannot be used in context initialization
     }
     //console.log(rdata);
     //console.log(rdata2);
