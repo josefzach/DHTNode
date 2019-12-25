@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 
-<div id="chart"></div>
+<!div id="chart"><!/div>
 <style>
 body {
     font: 10px Arial;
@@ -24,6 +24,14 @@ body {
     fill: none;
     stroke: #ffab00;
     stroke-width: 2px;
+    stroke-opacity: 0.5;
+}
+
+.line_humidity {
+    fill: none;
+    stroke: #b700ff;
+    stroke-width: 2px;
+    stroke-opacity: 0.5;
 }
 
 .contextline {
@@ -69,17 +77,22 @@ var nMaxPts = 100;
 
 var isChecked = true;
 
-var svg = d3.select("svg"),     
+var svg = d3.select("svg"),
     focusHeight = +svg.attr("height") * 0.7,
     contextHeight = +svg.attr("height") - focusHeight;
-
-var svg = d3.select("svg"),  
     totalWidth = +svg.attr("width"),
     margin = {top: 20, right: 20, bottom: contextHeight, left: 40},
     width = +svg.attr("width") - margin.left - margin.right,
     height = +svg.attr("height") - margin.top - margin.bottom,
     margin2 = {top: focusHeight+30, right: 20, bottom: 40, left: 40},
     height2 = +svg.attr("height") - margin2.top - margin2.bottom;
+
+var svg = d3.select("svg")
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .append("svg:g")
+	.attr("id","group")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
 	bisectDate = d3.bisector(function(d) { return d.Timestamp; }).left;
@@ -97,17 +110,23 @@ var line = d3.line()
     .y(function (d) { return y(d.Temperature); })
     .curve(d3.curveMonotoneX);
 
+var line_humidity = d3.line()
+    .defined(function(d) { return d.Temperature != 0; })
+    .x(function (d) { return x(d.Timestamp); })
+    .y(function (d) { return y(d.Humidity); })
+    .curve(d3.curveMonotoneX);
+    
 var line2 = d3.line()
     .x(function (d) { return x2(d.Timestamp); })
     .y(function (d) { return y2(d.Temperature); });
 
-svg = d3.select('#chart')
-    .append("svg:svg")
-    .attr('width', width + margin.left + margin.right)
-    .attr('height', height + margin.top + margin.bottom)
-    .append("svg:g")
-	.attr("id","group")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+//svg = d3.select('#chart')
+//    .append("svg:svg")
+//    .attr('width', width + margin.left + margin.right)
+//    .attr('height', height + margin.top + margin.bottom)
+//    .append("svg:g")
+//	.attr("id","group")
+//    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 //var clip = svg.append("defs").append("svg:clipPath")
 //    .attr("id", "clip")
@@ -142,6 +161,11 @@ svg = d3.select('#chart')
 		.tickSize(width)
 		.tickPadding(- 20 - width);
 
+	var yAxisRight = d3.axisLeft(y)
+		.ticks(5)
+		.tickSize(width)
+		.tickPadding(- 20 - width);
+        
 	var view = svg.append("rect")
 		.attr("class", "view")
 		.attr("x", 0.5)
@@ -208,6 +232,11 @@ d3.csv("rpi.node", function(error, data) {
 		.attr("class", "axis axis--y")
 		.call(yAxis);
 
+	focus.append("g")
+		.attr("class", "axis axis--y")
+        .attr("transform", "translate(" + width + ",0)")
+		.call(yAxisRight);
+        
     context.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + height2 + ")")
@@ -218,6 +247,11 @@ d3.csv("rpi.node", function(error, data) {
 		.attr("class", "line")
 		.attr("d", line);
 
+	chartBody.append("path")
+		.datum(dataperm)
+		.attr("class", "line_humidity")
+		.attr("d", line_humidity);
+        
     context.append("path")
         .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
         .attr("class", "contextline")
