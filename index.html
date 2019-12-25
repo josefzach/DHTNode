@@ -110,11 +110,11 @@ var line = d3.line()
     .y(function (d) { return y(d.Temperature); })
     .curve(d3.curveMonotoneX);
 
-var line_humidity = d3.line()
-    .defined(function(d) { return d.Temperature != 0; })
-    .x(function (d) { return x(d.Timestamp); })
-    .y(function (d) { return y(d.Humidity); })
-    .curve(d3.curveMonotoneX);
+//var line_humidity = d3.line()
+//    .defined(function(d) { return d.Temperature != 0; })
+//    .x(function (d) { return x(d.Timestamp); })
+//    .y(function (d) { return y(d.Humidity); })
+//    .curve(d3.curveMonotoneX);
     
 var line2 = d3.line()
     .x(function (d) { return x2(d.Timestamp); })
@@ -161,10 +161,10 @@ var line2 = d3.line()
 		.tickSize(width)
 		.tickPadding(- 20 - width);
 
-	var yAxisRight = d3.axisLeft(y)
-		.ticks(5)
-		.tickSize(width)
-		.tickPadding(- 20 - width);
+//	var yAxisRight = d3.axisLeft(y)
+//		.ticks(5)
+//		.tickSize(width)
+//		.tickPadding(- 20 - width);
         
 	var view = svg.append("rect")
 		.attr("class", "view")
@@ -232,10 +232,10 @@ d3.csv("rpi.node", function(error, data) {
 		.attr("class", "axis axis--y")
 		.call(yAxis);
 
-	focus.append("g")
-		.attr("class", "axis axis--y")
-        .attr("transform", "translate(" + width + ",0)")
-		.call(yAxisRight);
+//	focus.append("g")
+//		.attr("class", "axis axis--y")
+//        .attr("transform", "translate(" + width + ",0)")
+//		.call(yAxisRight);
         
     context.append("g")
         .attr("class", "axis axis--x")
@@ -247,10 +247,10 @@ d3.csv("rpi.node", function(error, data) {
 		.attr("class", "line")
 		.attr("d", line);
 
-	chartBody.append("path")
-		.datum(dataperm)
-		.attr("class", "line_humidity")
-		.attr("d", line_humidity);
+//	chartBody.append("path")
+//		.datum(dataperm)
+//		.attr("class", "line_humidity")
+//		.attr("d", line_humidity);
         
     context.append("path")
         .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
