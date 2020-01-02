@@ -99,7 +99,7 @@ var svg = d3.select("svg")
 var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
     bisectDate = d3.bisector(function(d) { return d.Timestamp; }).left;
     formatValue = d3.format(",.2f"),
-    formatCurrency = function(d) { return formatValue(d) + "°"; };
+    formatTemperature = function(d) { return formatValue(d) + "°"; };
     
 var x = d3.scaleTime().range([0, width]),
     x2 = d3.scaleTime().range([0, width]),
@@ -361,7 +361,7 @@ function mousemove() {
                             });
 
     tip.select("text.y")
-         .text(formatCurrency(d.Temperature))
+         .text(formatTemperature(d.Temperature))
          .attr('x', function() {
                                 return x(d.Timestamp)+10;
          })
@@ -414,7 +414,7 @@ function zoomed() {
         .attr('cx', function() {return x(d.Timestamp); })
         .attr('cy', function() {return y(d.Temperature); });                
     tip.select("text.y")
-        .text(formatCurrency(d.Temperature))
+        .text(formatTemperature(d.Temperature))
         .attr('x', function() {return x(d.Timestamp)+10;})
         .attr('y', function() {return y(d.Temperature); });
 
