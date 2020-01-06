@@ -72,12 +72,16 @@ body {
 <script>
 
 var nMaxPts = 100;
+var minDist = 30;
+
 //var margin = {top: 20, right: 20, bottom: 50, left: 50},
 //    margin2 = {top: 20, right: 20, bottom: 30, left: 40},
 //    width = +svg.attr("width") - margin.left - margin.right,
 //    height = +svg.attr("height") - margin.top - margin.bottom;
 
 var isChecked = true;
+
+var isoLenPts;
 
 var svg = d3.select("svg"),
     focusHeight = +svg.attr("height") * 0.7,
@@ -323,7 +327,7 @@ var circleOpacityOnLineHover = "0.25"
 var circleRadius = 3;
 var circleRadiusHover = 6;
 
-    chartBody.select(".line")
+/*      chartBody.select(".line")
         .on("mouseover", function(d) {
             console.log("MOUSEOVER");
             d3.selectAll('.line')
@@ -343,7 +347,7 @@ var circleRadiusHover = 6;
             d3.select(this)
                 .style("stroke-width", lineStroke)
                 .style("cursor", "none");
-        });
+        }); */
         
     // plot x-axis
     focus.append("g")
@@ -376,8 +380,11 @@ var circleRadiusHover = 6;
     //chartBody.select(".line").attr("d", line(dataslice.slice(0,1000)));
     //context.select(".contextline").attr("d", line(dataslice));
     //y2.domain(y.domain());
-    //gX.call(xAxis.scale(x2));
-
+    //gX.call(xAxis.scale(x2)); 
+    
+    l=chartBody.selectAll('.line').node();
+    isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
+    
 });
 
 function mouseDate(scale) {
@@ -389,19 +396,19 @@ function mouseDate(scale) {
     return [d, d3.mouse(g)];
 }
 
-var lines = document.getElementsByClassName('line');
-
 function mouseDate2(scale) {
+    var lines = chartBody.select('.line').node();
+    
     var g = d3.select("#group")._groups[0][0];
     var mouse = d3.mouse(g);
     var beginning = 0,
-        end = lines[0].getTotalLength(),
+        end = lines.getTotalLength(),
         target = null;
 
     var steps = 0;
     while (true){
       target = Math.floor((beginning + end) / 2);
-      pos = lines[0].getPointAtLength(target);
+      pos = lines.getPointAtLength(target);
       if ((target === end || target === beginning) && pos.x !== mouse[0]) {
           break;
       }
@@ -412,7 +419,7 @@ function mouseDate2(scale) {
       //else if (pos.x < mouse[0]) beginning = target;
       else break; //position found
     }
-    console.log(steps);
+    //console.log(steps);
     return pos;
 }
 
@@ -442,8 +449,8 @@ function mousemove() {
                                  //return y(d.Temperature);
                                  return pos.y;
          });
-    
-    if( getXYDist(getXYData(dataslice),mxy)[1] < 20 ) {   
+
+    if( getXYDist2(isoLenPts,mxy)[1] < minDist ) {   
         console.log("CLOSE");
         d3.selectAll('.line')
             .style('opacity', 0.6);
@@ -464,6 +471,28 @@ function mousemove() {
             .style("stroke-width", 2)
             .style("cursor", "pointer");    
     }
+    
+/*     if( getXYDist(getXYData(dataslice),mxy)[1] < 20 ) {   
+        //console.log("CLOSE");
+        d3.selectAll('.line')
+            .style('opacity', 0.6);
+        d3.selectAll('.circle')
+            .style('opacity', 0.6);
+        d3.select(this)
+            .style('opacity', 0)
+            .style("stroke-width", 5)
+            .style("cursor", "pointer");
+    } else {
+        //console.log("FAR");
+        d3.selectAll('.line')
+            .style('opacity', 0.2);
+        d3.selectAll('.circle')
+            .style('opacity', 0.2);
+        d3.select(this)
+            .style('opacity', 0.2)
+            .style("stroke-width", 2)
+            .style("cursor", "pointer");    
+    } */
 }
 
 function zoomed() {
@@ -522,6 +551,9 @@ function zoomed() {
     
     //xydat = svg.select(".line").attr("d");
     //console.log(xydat);
+
+    l=chartBody.selectAll('.line').node();
+    isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
 }
 
 function brushed() {
@@ -668,6 +700,34 @@ function getXYDist( xyarray, mxy ){
     });
     return [xydist, max, maxind];
 }
+
+function getXYDist2( xyarray, mxy ){
+    var xydist = [];
+    var max = 1e100;
+    var dist;
+    var maxind;
+    xyarray.forEach(function(d,index) {
+        dist = Math.sqrt( Math.pow(d.x-mxy[0],2) + Math.pow(d.y-mxy[1],2) );
+        if ( dist < max ){
+            max = dist;
+            maxind = index;
+        }
+        xydist.push( dist );
+    });
+    return [xydist, max, maxind];
+}
+
+function getPointsOnPath( path, dlen ) {
+    totLen = path.getTotalLength();
+    var ptarray = [];
+    
+    for (let len = 0; len < totLen; len = len + dlen) {
+        ptarray.push( path.getPointAtLength(len) );
+    }
+    return ptarray;
+}
+
+
 
 </script>
 </body>
