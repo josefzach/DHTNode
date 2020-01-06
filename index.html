@@ -108,6 +108,7 @@ var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
 var x = d3.scaleTime().range([0, width]),
     x2 = d3.scaleTime().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
+    yH = d3.scaleLinear().range([height, 0]),
     y2 = d3.scaleLinear().range([height2, 0]);
 
 var line = d3.line()
@@ -119,7 +120,7 @@ var line = d3.line()
 var line_humidity = d3.line()
     .defined(function(d) { return d.Humidity != 0; })
     .x(function (d) { return x(d.Timestamp); })
-    .y(function (d) { return y(d.Humidity); })
+    .y(function (d) { return yH(d.Humidity); })
     .curve(d3.curveMonotoneX);
     
 var line2 = d3.line()
@@ -168,7 +169,7 @@ var yAxis = d3.axisRight(y)
     .tickSize(width)
     .tickPadding(- 20 - width);
 
-var yAxisRight = d3.axisLeft(y)
+var yAxisRight = d3.axisLeft(yH)
     .ticks(5)
     .tickSize(width)
     .tickPadding(- 20 - width);
@@ -186,6 +187,7 @@ var chartBody = svg.append("g")
 
 var focus = svg.append("g") 
     .attr("class", "focus")
+
     //.style("display", "none")
     //.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -219,7 +221,8 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     // format the data
     dataperm.forEach(function(d,i) {
         d.Timestamp = parseTime(d.Timestamp);
-        d.Temperature = +20*d.Temperature;
+        d.Temperature = +d.Temperature;
+        d.Humidity = +d.Humidity;
     });
 
     // Scale the range of the data
@@ -227,7 +230,8 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     //console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));    
     x.domain(d3.extent(dataperm, function(d) { return d.Timestamp; }));
     y.domain(getYRange(dataperm));
-    
+    yH.domain(getHumidityRange(dataperm));
+
     x2.domain(x.domain());
     y2.domain(y.domain());    
 
@@ -547,6 +551,7 @@ function zoomed() {
     // update x-axis
     focus.select(".axis--x").call(xAxis);
     focus.select(".axis--y").call(yAxis);
+    focus.select(".axis--yH").call(yAxisRight);
     // update context area
     context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
     
@@ -677,7 +682,11 @@ function reduceArray( data, drange, nPts ) {
 }
 
 function getYRange( data ){
-    return [d3.min(data, function (d) { return d.Temperature; })-5, d3.max(data, function (d) { return d.Temperature; })+5];
+    return [d3.min(data, function (d) { return d.Temperature; })-2, d3.max(data, function (d) { return d.Temperature; })+2];
+}
+
+function getHumidityRange( data ){
+    return [d3.min(data, function (d) { return d.Humidity; })-2, d3.max(data, function (d) { return d.Humidity; })+2];
 }
 
 function getXYData( data ){
