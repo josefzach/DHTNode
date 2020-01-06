@@ -382,7 +382,7 @@ var circleRadiusHover = 6;
     //y2.domain(y.domain());
     //gX.call(xAxis.scale(x2)); 
     
-    l=chartBody.selectAll('.line').node();
+    l=chartBody.select('.line').node();
     isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
     
 });
@@ -428,30 +428,30 @@ function mousemove() {
     //var xt = transform.rescaleX(x2); //, yt = transform.rescaleY(y);
     //console.log(x.domain())
     [d,mxy] = mouseDate(x);
-    var pos = mouseDate2(x);
+    //var pos = mouseDate2(x);
     tip.select("circle.y")
         .attr('cx', function() {
-                                //return x(d.Timestamp);
-                                return pos.x;
+                                return x(d.Timestamp);
+                                //return pos.x;
                             })
         .attr('cy', function() {
-                                //return y(d.Temperature);
-                                return pos.y;
+                                return y(d.Temperature);
+                                //return pos.y;
                             });
 
     tip.select("text.y")
          .text(formatTemperature(d.Temperature))
          .attr('x', function() {
-                                //return x(d.Timestamp)+10;
-                                return pos.x + 10;
+                                return x(d.Timestamp)+10;
+                                //return pos.x + 10;
          })
          .attr('y', function() {
-                                 //return y(d.Temperature);
-                                 return pos.y;
+                                 return y(d.Temperature);
+                                 //return pos.y;
          });
 
     if( getXYDist2(isoLenPts,mxy)[1] < minDist ) {   
-        console.log("CLOSE");
+        //console.log("CLOSE");
         d3.selectAll('.line')
             .style('opacity', 0.6);
         d3.selectAll('.circle')
@@ -461,7 +461,7 @@ function mousemove() {
             .style("stroke-width", 5)
             .style("cursor", "pointer");
     } else {
-        console.log("FAR");
+        //console.log("FAR");
         d3.selectAll('.line')
             .style('opacity', 0.2);
         d3.selectAll('.circle')
@@ -552,7 +552,7 @@ function zoomed() {
     //xydat = svg.select(".line").attr("d");
     //console.log(xydat);
 
-    l=chartBody.selectAll('.line').node();
+    l=chartBody.select('.line').node();
     isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
 }
 
