@@ -24,14 +24,14 @@ body {
     fill: none;
     stroke: #ffab00;
     stroke-width: 2px;
-    stroke-opacity: 0.5;
+    stroke-opacity: 1.0;
 }
 
 .line_humidity {
     fill: none;
     stroke: #b700ff;
     stroke-width: 2px;
-    stroke-opacity: 0.5;
+    stroke-opacity: 1.0;
 }
 
 .contextline {
@@ -70,6 +70,9 @@ body {
 <svg width="1000" height="600"></svg>
 
 <script>
+
+// TODO:
+// - add timestampt to tooltip
 
 var nMaxPts = 100;
 var minDist = 30;
@@ -320,17 +323,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .on("mousemove", mousemove)
         .call(zoom);
 
-// inactive if rect above is enabled
-var lineOpacity = "0.25";
-var lineOpacityHover = "0.85";
-var otherLinesOpacityHover = "0.1";
-var lineStroke = "1.5px";
-var lineStrokeHover = "2.5px";
 
-var circleOpacity = '0.85';
-var circleOpacityOnLineHover = "0.25"
-var circleRadius = 3;
-var circleRadiusHover = 6;
 
 /*      chartBody.select(".line")
         .on("mouseover", function(d) {
@@ -435,14 +428,26 @@ function mousemove() {
     [d,mxy] = mouseDate(x);
     //var pos = mouseDate2(x);
 
+// inactive if rect above is enabled
+//var lineOpacity = "0.25";
+//var lineOpacityHover = "0.85";
+//var otherLinesOpacityHover = "0.1";
+//var lineStroke = "1.5px";
+//var lineStrokeHover = "2.5px";
+
+//var circleOpacity = '0.85';
+//var circleOpacityOnLineHover = "0.25"
+//var circleRadius = 3;
+//var circleRadiusHover = 6;
+
     if( getXYDist2(isoLenPts,mxy)[1] < minDist ) {   
         //console.log("CLOSE");
         d3.selectAll('.line')
-            .style('opacity', 0.6);
-        d3.selectAll('.circle')
-            .style('opacity', 0.6);
+            .style('opacity', 1.0);
+//        d3.selectAll('.circle')
+//            .style('opacity', 0.6);
         d3.select(this)
-            .style('opacity', 0)
+            .style('opacity', 0.0)
             .style("stroke-width", 5)
             .style("cursor", "pointer");
 
@@ -472,11 +477,11 @@ function mousemove() {
     } else {
         //console.log("FAR");
         d3.selectAll('.line')
-            .style('opacity', 0.2);
-        d3.selectAll('.circle')
-            .style('opacity', 0.2);
+            .style('opacity', 0.4);
+//        d3.selectAll('.circle')
+//            .style('opacity', 0.2);
         d3.select(this)
-            .style('opacity', 0.2)
+            .style('opacity', 0.4)
             .style("stroke-width", 2)
             .style("cursor", "pointer");  
         
