@@ -398,18 +398,22 @@ function mouseDate2(scale) {
         end = lines[0].getTotalLength(),
         target = null;
 
+    var steps = 0;
     while (true){
       target = Math.floor((beginning + end) / 2);
       pos = lines[0].getPointAtLength(target);
       if ((target === end || target === beginning) && pos.x !== mouse[0]) {
           break;
       }
-      if (pos.x > mouse[0])      end = target;
-      else if (pos.x < mouse[0]) beginning = target;
+      steps += 1;
+      if (Math.round(pos.x) > mouse[0])      end = target; //speed up matching with Math.round??
+      //if (pos.x > mouse[0])      end = target; 
+      else if (Math.round(pos.x) < mouse[0]) beginning = target;
+      //else if (pos.x < mouse[0]) beginning = target;
       else break; //position found
     }
+    console.log(steps);
     return pos;
-    //console.log( y.invert(pos.y).toFixed(2) );
 }
 
 function mousemove() {
