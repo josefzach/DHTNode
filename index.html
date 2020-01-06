@@ -315,8 +315,8 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .attr("height", height)
         //.style("fill", "none")
         //.style("pointer-events", "all")
-        .on("mouseover", function() { tip.style("display", null); })
-        .on("mouseout", function() { tip.style("display", "none"); })
+        //.on("mouseover", function() { tip.style("display", null); })
+        //.on("mouseout", function() { tip.style("display", "none"); })
         .on("mousemove", mousemove)
         .call(zoom);
 
@@ -434,26 +434,6 @@ function mousemove() {
     //console.log(x.domain())
     [d,mxy] = mouseDate(x);
     //var pos = mouseDate2(x);
-    tip.select("circle.y")
-        .attr('cx', function() {
-                                return x(d.Timestamp);
-                                //return pos.x;
-                            })
-        .attr('cy', function() {
-                                return y(d.Temperature);
-                                //return pos.y;
-                            });
-
-    tip.select("text.y")
-         .text(formatTemperature(d.Temperature))
-         .attr('x', function() {
-                                return x(d.Timestamp)+10;
-                                //return pos.x + 10;
-         })
-         .attr('y', function() {
-                                 return y(d.Temperature);
-                                 //return pos.y;
-         });
 
     if( getXYDist2(isoLenPts,mxy)[1] < minDist ) {   
         //console.log("CLOSE");
@@ -465,6 +445,30 @@ function mousemove() {
             .style('opacity', 0)
             .style("stroke-width", 5)
             .style("cursor", "pointer");
+
+        tip.style("display", null);
+
+        tip.select("circle.y")
+            .attr('cx', function() {
+                                    return x(d.Timestamp);
+                                    //return pos.x;
+                                })
+            .attr('cy', function() {
+                                    return y(d.Temperature);
+                                    //return pos.y;
+                                });
+
+        tip.select("text.y")
+             .text(formatTemperature(d.Temperature))
+             .attr('x', function() {
+                                    return x(d.Timestamp)+10;
+                                    //return pos.x + 10;
+             })
+             .attr('y', function() {
+                                     return y(d.Temperature)-10;
+                                     //return pos.y;
+             });
+
     } else {
         //console.log("FAR");
         d3.selectAll('.line')
@@ -474,7 +478,9 @@ function mousemove() {
         d3.select(this)
             .style('opacity', 0.2)
             .style("stroke-width", 2)
-            .style("cursor", "pointer");    
+            .style("cursor", "pointer");  
+        
+        tip.style("display", "none");  
     }
     
 /*     if( getXYDist(getXYData(dataslice),mxy)[1] < 20 ) {   
