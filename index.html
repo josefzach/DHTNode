@@ -248,7 +248,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .call(yAxis);
 
     focus.append("g")
-        .attr("class", "axis axis--y")
+        .attr("class", "axis axis--yH")
         .attr("transform", "translate(" + width + ",0)")
         .call(yAxisRight);
         
@@ -546,6 +546,7 @@ function zoomed() {
 
     if ( isChecked == true ) {
         y.domain(getYRange(dataslice));
+        yH.domain(getHumidityRange(dataslice));
     } 
 
     //d = mouseDate(x);
@@ -603,6 +604,7 @@ function brushed() {
 
     //update chart to hold only the visible data (for performance reasons)
     chartBody.select(".line").attr("d", line(dataslice));
+    chartBody.select(".line_humidity").attr("d", line_humidity(dataslice));
 
     if ( isChecked == true ) {
         y.domain(getYRange(dataslice));
