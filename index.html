@@ -319,7 +319,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         //.style("fill", "none")
         //.style("pointer-events", "all")
         //.on("mouseover", function() { tip.style("display", null); })
-        //.on("mouseout", function() { tip.style("display", "none"); })
+        .on("mouseout", function() { tip.style("display", "none"); })
         .on("mousemove", mousemove)
         .call(zoom);
 
@@ -542,6 +542,7 @@ function zoomed() {
         dataslice = dataperm.slice(drange[0], drange[1]);
     }
     chartBody.select(".line").attr("d", line(dataslice));
+    chartBody.select(".line_humidity").attr("d", line_humidity(dataslice));
 
     if ( isChecked == true ) {
         y.domain(getYRange(dataslice));
@@ -652,6 +653,14 @@ function getTemp( array ) {
     return tarray;
 }
 
+function getHumidity( array ) {
+    var tarray = [];
+    for (var i=0; i < array.length; i=i+1) {
+        tarray[i] = parseFloat(array[i].Humidity);
+    }
+    return tarray;
+}
+
 const arrAvg = arr => arr.reduce((a,b) => a + b, 0) / arr.length
 
 function reduceArray( data, drange, nPts ) {
@@ -674,6 +683,7 @@ function reduceArray( data, drange, nPts ) {
         // using max has performance advantage?
         //var tavg = arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
         var tavg = Math.max(...getTemp(data.slice(ind[i],ind[i+1])) );
+        var havg = Math.max(...getHumidity(data.slice(ind[i],ind[i+1])) );
         //el = {Timestamp: data[ind[i]].Timestamp, 
         //          Temperature: tavg,
         //          Humidity: "n/a"};
@@ -683,6 +693,7 @@ function reduceArray( data, drange, nPts ) {
         //el = data[ind[i]];
         //console.log(el);
         el.Temperature = tavg;      
+        el.Humidity = havg;  
         rdata.push(el);
         //rdata[i].Temperature = tavg; 
         //rdata2.push(el2);  //zooming creates less fluctuation using this, but cannot be used in context initialization
