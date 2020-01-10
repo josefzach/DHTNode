@@ -240,12 +240,12 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     // convert data from string to corresponding format
     dataperm.forEach(function(d,i) {
         d[dataKeys[0]] = parseTime(d[dataKeys[0]]);
-        d[dataKeys[1]] = +d[dataKeys[1]];
-        d[dataKeys[2]] = +d[dataKeys[2]];
+        //d[dataKeys[1]] = +d[dataKeys[1]];
+        //d[dataKeys[2]] = +d[dataKeys[2]];
         // TODO: DEBUG
-        //for (var key in dataKeysNoTime) {
-        //    d[key] = +d[key];
-        //}
+        for (var key of dataKeysNoTime) {
+            d[key] = +d[key];
+        }
     });
 
     // Scale the range of the data
@@ -253,7 +253,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     //console.log("Price range: ", d3.extent(data, function(d) { return +d[dataKeys[1]]; }));    
     x.domain(d3.extent(dataperm, function(d) { return d[dataKeys[0]]; }));
     y.domain(getYRange( dataperm, dataKeys[1], 2 ));
-    yH.domain(getHumidityRange(dataperm));
+    yH.domain(getYRange( dataperm, dataKeys[2], 2 ));
 
     x2.domain(x.domain());
     y2.domain(y.domain());    
@@ -575,7 +575,7 @@ function zoomed() {
 
     if ( isChecked == true ) {
         y.domain(getYRange( dataslice, dataKeys[1], 2 ));
-        yH.domain(getHumidityRange(dataslice));
+        yH.domain(getYRange( dataslice, dataKeys[2], 2 ));
     } 
 
     //d = mouseDate(x);
@@ -716,7 +716,7 @@ function reduceArray( data, drange, nPts ) {
 
         el = {...data[ind[i]]};
 
-        for (var key in dataKeysNoTime) {
+        for (var key of dataKeysNoTime) {
             el[key] = Math.max(...getVal(data.slice(ind[i],ind[i+1]), key) );       
         }
         rdata.push(el);
@@ -732,13 +732,9 @@ function getYRange( data, key, margin ){
     return [d3.min(data, function (d) { return d[key]; })-margin, d3.max(data, function (d) { return d[key]; })+margin];
 }
 
-function getHumidityRange( data ){
-    return [d3.min(data, function (d) { return d[dataKeys[2]]; })-2, d3.max(data, function (d) { return d[dataKeys[2]]; })+2];
-}
-
-function getXYData( data ){
+function getXYData( data, key ){
     var xyarray = [];
-    data.forEach(d => xyarray.push([x(d[dataKeys[0]]),y(d[dataKeys[1]])]));
+    data.forEach(d => xyarray.push([x(d[dataKeys[0]]),y(d[key])]));
     return xyarray;
 }
 
