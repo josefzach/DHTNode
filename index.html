@@ -115,20 +115,20 @@ var x = d3.scaleTime().range([0, width]),
     y2 = d3.scaleLinear().range([height2, 0]);
 
 var line = d3.line()
-    .defined(function(d) { return d.Temperature != 0; })
+    .defined(function(d) { return d['Temperature'] != 0; })
     .x(function (d) { return x(d.Timestamp); })
-    .y(function (d) { return y(d.Temperature); })
+    .y(function (d) { return y(d['Temperature']); })
     .curve(d3.curveMonotoneX);
 
 var line_humidity = d3.line()
-    .defined(function(d) { return d.Humidity != 0; })
+    .defined(function(d) { return d['Humidity'] != 0; })
     .x(function (d) { return x(d.Timestamp); })
-    .y(function (d) { return yH(d.Humidity); })
+    .y(function (d) { return yH(d['Humidity']); })
     .curve(d3.curveMonotoneX);
     
 var line2 = d3.line()
     .x(function (d) { return x2(d.Timestamp); })
-    .y(function (d) { return y2(d.Temperature); })
+    .y(function (d) { return y2(d['Temperature']); })
     .curve(d3.curveMonotoneX);
 
 //svg = d3.select('#chart')
@@ -224,13 +224,13 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     // format the data
     dataperm.forEach(function(d,i) {
         d.Timestamp = parseTime(d.Timestamp);
-        d.Temperature = +d.Temperature;
-        d.Humidity = +d.Humidity;
+        d['Temperature'] = +d['Temperature'];
+        d['Humidity'] = +d['Humidity'];
     });
 
     // Scale the range of the data
     //console.log("Date range: ", d3.extent(data, function(d) { return d.Timestamp; }));
-    //console.log("Price range: ", d3.extent(data, function(d) { return +d.Temperature; }));    
+    //console.log("Price range: ", d3.extent(data, function(d) { return +d['Temperature']; }));    
     x.domain(d3.extent(dataperm, function(d) { return d.Timestamp; }));
     y.domain(getYRange(dataperm));
     yH.domain(getHumidityRange(dataperm));
@@ -319,7 +319,8 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         //.style("fill", "none")
         //.style("pointer-events", "all")
         //.on("mouseover", function() { tip.style("display", null); })
-        .on("mouseout", function() { tip.style("display", "none"); })
+        .on("mouseout", function() { tip.style("display", "none");
+                                     focus.select('.axis--y').style("display","none") })
         .on("mousemove", mousemove)
         .call(zoom);
 
@@ -382,6 +383,9 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     
     l=chartBody.select('.line').node();
     isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
+
+    // hide y-axis per default
+    focus.select('.axis--y').style("display","none");
     
 });
 
@@ -453,24 +457,26 @@ function mousemove() {
 
         tip.style("display", null);
 
+        focus.select('.axis--y').style("display",null)
+
         tip.select("circle.y")
             .attr('cx', function() {
                                     return x(d.Timestamp);
                                     //return pos.x;
                                 })
             .attr('cy', function() {
-                                    return y(d.Temperature);
+                                    return y(d['Temperature']);
                                     //return pos.y;
                                 });
 
         tip.select("text.y")
-             .text(formatTemperature(d.Temperature))
+             .text(formatTemperature(d['Temperature']))
              .attr('x', function() {
                                     return x(d.Timestamp)+10;
                                     //return pos.x + 10;
              })
              .attr('y', function() {
-                                     return y(d.Temperature)-10;
+                                     return y(d['Temperature'])-10;
                                      //return pos.y;
              });
 
@@ -486,6 +492,9 @@ function mousemove() {
             .style("cursor", "pointer");  
         
         tip.style("display", "none");  
+
+        // hide y-axis
+        focus.select('.axis--y').style("display","none");
     }
     
 /*     if( getXYDist(getXYData(dataslice),mxy)[1] < 20 ) {   
@@ -521,7 +530,7 @@ function zoomed() {
 
   //chartBody.select(".line")
   //         .attr("d",line.x(function(d) { return xt(d.Timestamp);})
-  //         .y(function(d) { return y(d.Temperature);}));
+  //         .y(function(d) { return y(d['Temperature']);}));
     
 //chartBody.select(".line").attr("d", line(data));
 
@@ -555,11 +564,11 @@ function zoomed() {
         .classed("zoomed", true)
         .attr("id","one")
         .attr('cx', function() {return x(d.Timestamp); })
-        .attr('cy', function() {return y(d.Temperature); });                
+        .attr('cy', function() {return y(d['Temperature']); });                
     tip.select("text.y")
-        .text(formatTemperature(d.Temperature))
+        .text(formatTemperature(d['Temperature']))
         .attr('x', function() {return x(d.Timestamp)+10;})
-        .attr('y', function() {return y(d.Temperature); });
+        .attr('y', function() {return y(d['Temperature']); });
 
     // update x-axis
     focus.select(".axis--x").call(xAxis);
@@ -650,7 +659,7 @@ function linSpace(startValue, stopValue, cardinality) {
 function getTemp( array ) {
     var tarray = [];
     for (var i=0; i < array.length; i=i+1) {
-        tarray[i] = parseFloat(array[i].Temperature);
+        tarray[i] = parseFloat(array[i]['Temperature']);
     }
     return tarray;
 }
@@ -658,7 +667,7 @@ function getTemp( array ) {
 function getHumidity( array ) {
     var tarray = [];
     for (var i=0; i < array.length; i=i+1) {
-        tarray[i] = parseFloat(array[i].Humidity);
+        tarray[i] = parseFloat(array[i]['Humidity']);
     }
     return tarray;
 }
@@ -694,10 +703,10 @@ function reduceArray( data, drange, nPts ) {
         //el = jQuery.extend(true, {}, data[ind[i]]);
         //el = data[ind[i]];
         //console.log(el);
-        el.Temperature = tavg;      
-        el.Humidity = havg;  
+        el['Temperature'] = tavg;      
+        el['Humidity'] = havg;  
         rdata.push(el);
-        //rdata[i].Temperature = tavg; 
+        //rdata[i]['Temperature'] = tavg; 
         //rdata2.push(el2);  //zooming creates less fluctuation using this, but cannot be used in context initialization
     }
     //console.log(rdata);
@@ -706,16 +715,16 @@ function reduceArray( data, drange, nPts ) {
 }
 
 function getYRange( data ){
-    return [d3.min(data, function (d) { return d.Temperature; })-2, d3.max(data, function (d) { return d.Temperature; })+2];
+    return [d3.min(data, function (d) { return d['Temperature']; })-2, d3.max(data, function (d) { return d['Temperature']; })+2];
 }
 
 function getHumidityRange( data ){
-    return [d3.min(data, function (d) { return d.Humidity; })-2, d3.max(data, function (d) { return d.Humidity; })+2];
+    return [d3.min(data, function (d) { return d['Humidity']; })-2, d3.max(data, function (d) { return d['Humidity']; })+2];
 }
 
 function getXYData( data ){
     var xyarray = [];
-    data.forEach(d => xyarray.push([x(d.Timestamp),y(d.Temperature)]));
+    data.forEach(d => xyarray.push([x(d.Timestamp),y(d['Temperature'])]));
     return xyarray;
 }
 
