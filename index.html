@@ -131,7 +131,10 @@ var line_humidity = d3.line()
     .x(function (d) { return x(d[dataKeys[0]]); })
     .y(function (d) { return yH(d[dataKeys[2]]); })
     .curve(d3.curveMonotoneX);
-    
+
+var axis_X = d3.scaleTime().range([0, width]);
+var d3_line = [];
+
 var line2 = d3.line()
     .defined(function(d) { return d[dataKeys[1]] != 0; })
     .x(function (d) { return x2(d[dataKeys[0]]); })
@@ -211,10 +214,30 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         }
     });
 
+    // load d3 lines, scales and axes per dataset
+    for (var key of dataKeysNoTime) {
+        d3_line[key] = [];
+        d3_line[key].Scale = d3.scaleLinear().range([height, 0]);
+        d3_line[key].Axis = d3.axisRight(y)
+            .ticks(5)
+            .tickSize(width)
+            .tickPadding(- 20 - width);
+        d3_line[key].Line = d3.line()
+            .defined(function(d) { return d[key] != 0; })
+            .x(function (d) { return axis_x(d[dataKeys[0]]); })
+            .y(function (d) { return d3_line[key].Scale(d[key]); })
+            .curve(d3.curveMonotoneX);
+    }
+
     // Scale the range of the data   
     x.domain(d3.extent(dataperm, function(d) { return d[dataKeys[0]]; }));
+
     y.domain(getYRange( dataperm, dataKeys[1], 2 ));
     yH.domain(getYRange( dataperm, dataKeys[2], 2 ));
+    
+    for (var key of dataKeysNoTime) {
+        d3_line[key].Scale.domain( getYRange( dataperm, key, 2 ) );
+    }
 
     x2.domain(x.domain());
     y2.domain(y.domain());    
@@ -400,7 +423,7 @@ function mousemove() {
                                     //return pos.x;
                                 })
             .attr('cy', function() {
-                                    return y(d[dataKeys[1]]);
+                                    return d3_line[dataKeys[1]].Scale(d[dataKeys[1]]);
                                     //return pos.y;
                                 });
 
@@ -411,7 +434,7 @@ function mousemove() {
                                     //return pos.x + 10;
              })
              .attr('y', function() {
-                                     return y(d[dataKeys[1]])-10;
+                                     return d3_line[dataKeys[1]].Scale(d[dataKeys[1]])-10;
                                      //return pos.y;
              });
 
@@ -455,6 +478,9 @@ function zoomed() {
     chartBody.select(".line_humidity").attr("d", line_humidity(dataslice));
 
     if ( isChecked == true ) {
+        for (key of dataKeysNoTime) {
+            d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));        
+        }
         y.domain(getYRange( dataslice, dataKeys[1], 2 ));
         yH.domain(getYRange( dataslice, dataKeys[2], 2 ));
     } 
@@ -464,11 +490,11 @@ function zoomed() {
         .classed("zoomed", true)
         .attr("id","one")
         .attr('cx', function() {return x(d[dataKeys[0]]); })
-        .attr('cy', function() {return y(d[dataKeys[1]]); });                
+        .attr('cy', function() {return d3_line[dataKeys[1]].Scale(d[dataKeys[1]]); });                
     tip.select("text")
         .text(formatDataString(d,dataKeys[1]))
         .attr('x', function() {return x(d[dataKeys[0]])+10;})
-        .attr('y', function() {return y(d[dataKeys[1]]); });
+        .attr('y', function() {return d3_line[dataKeys[1]].Scale(d[dataKeys[1]])-10; });
 
     // update x-axis
     focus.select(".axis--x").call(xAxis);
@@ -508,7 +534,11 @@ function brushed() {
     chartBody.select(".line").attr("d", line(dataslice));
     chartBody.select(".line_humidity").attr("d", line_humidity(dataslice));
 
+    // disable beow to auto zoom on release brush
     if ( isChecked == true ) {
+        for (key of dataKeysNoTime) {
+            d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));        
+        }
         y.domain(getYRange( dataslice, dataKeys[1], 2 ));
     } 
 
@@ -593,7 +623,7 @@ function getYRange( data, key, margin ){
 
 function getXYData( data, key ){
     var xyarray = [];
-    data.forEach(d => xyarray.push([x(d[dataKeys[0]]),y(d[key])]));
+    data.forEach(d => xyarray.push([x(d[dataKeys[0]]),d3_line[key].Scale(d[key])]));
     return xyarray;
 }
 
