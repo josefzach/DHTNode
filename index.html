@@ -117,7 +117,7 @@ var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
 var x = d3.scaleTime().range([0, width]),
     x2 = d3.scaleTime().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
-    yH = d3.scaleLinear().range([height, 0]),
+    //yH = d3.scaleLinear().range([height, 0]),
     y2 = d3.scaleLinear().range([height2, 0]);
 
 var line = d3.line()
@@ -126,13 +126,12 @@ var line = d3.line()
     .y(function (d) { return y(d[dataKeys[1]]); })
     .curve(d3.curveMonotoneX);
 
-var line_humidity = d3.line()
-    .defined(function(d) { return d[dataKeys[2]] != 0; })
-    .x(function (d) { return x(d[dataKeys[0]]); })
-    .y(function (d) { return yH(d[dataKeys[2]]); })
-    .curve(d3.curveMonotoneX);
+//var line_humidity = d3.line()
+//    .defined(function(d) { return d[dataKeys[2]] != 0; })
+//    .x(function (d) { return x(d[dataKeys[0]]); })
+//    .y(function (d) { return yH(d[dataKeys[2]]); })
+//    .curve(d3.curveMonotoneX);
 
-var axis_X = d3.scaleTime().range([0, width]);
 var d3_line = [];
 
 var line2 = d3.line()
@@ -158,15 +157,15 @@ var xAxis = d3.axisBottom(x)
 
 var xAxis2 = d3.axisBottom(x2);
             
-var yAxis = d3.axisRight(y)
-    .ticks(5)
-    .tickSize(width)
-    .tickPadding(- 20 - width);
+//var yAxis = d3.axisRight(y)
+//    .ticks(5)
+//    .tickSize(width)
+//    .tickPadding(- 20 - width);
 
-var yAxisRight = d3.axisLeft(yH)
-    .ticks(5)
-    .tickSize(width)
-    .tickPadding(- 20 - width);
+//var yAxisRight = d3.axisLeft(yH)
+//    .ticks(5)
+//    .tickSize(width)
+//    .tickPadding(- 20 - width);
         
 var view = svg.append("rect")
     .attr("class", "view")
@@ -218,13 +217,13 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     for (var key of dataKeysNoTime) {
         d3_line[key] = [];
         d3_line[key].Scale = d3.scaleLinear().range([height, 0]);
-        d3_line[key].Axis = d3.axisRight(y)
+        d3_line[key].Axis = d3.axisRight(d3_line[key].Scale)
             .ticks(5)
             .tickSize(width)
             .tickPadding(- 20 - width);
         d3_line[key].Line = d3.line()
             .defined(function(d) { return d[key] != 0; })
-            .x(function (d) { return axis_x(d[dataKeys[0]]); })
+            .x(function (d) { return x(d[dataKeys[0]]); })
             .y(function (d) { return d3_line[key].Scale(d[key]); })
             .curve(d3.curveMonotoneX);
     }
@@ -233,7 +232,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     x.domain(d3.extent(dataperm, function(d) { return d[dataKeys[0]]; }));
 
     y.domain(getYRange( dataperm, dataKeys[1], 2 ));
-    yH.domain(getYRange( dataperm, dataKeys[2], 2 ));
+    d3_line[dataKeys[2]].Scale.domain(getYRange( dataperm, dataKeys[2], 2 ));
     
     for (var key of dataKeysNoTime) {
         d3_line[key].Scale.domain( getYRange( dataperm, key, 2 ) );
@@ -249,12 +248,12 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
 
     focus.append("g")
         .attr("class", "axis axis--y")
-        .call(yAxis);
+        .call(d3_line[dataKeys[1]].Axis);
 
     focus.append("g")
         .attr("class", "axis axis--yH")
         .attr("transform", "translate(" + width + ",0)")
-        .call(yAxisRight);
+        .call(d3_line[dataKeys[2]].Axis);
         
     context.append("g")
         .attr("class", "axis axis--x")
@@ -269,7 +268,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     chartBody.append("path")
         .datum(dataperm)
         .attr("class", "line_humidity")
-        .attr("d", line_humidity);
+        .attr("d", d3_line[dataKeys[2]].Line);
         
     context.append("path")
         .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
@@ -475,14 +474,14 @@ function zoomed() {
         dataslice = dataperm.slice(drange[0], drange[1]);
     }
     chartBody.select(".line").attr("d", line(dataslice));
-    chartBody.select(".line_humidity").attr("d", line_humidity(dataslice));
+    chartBody.select(".line_humidity").attr("d", d3_line[dataKeys[2]].Line(dataslice));
 
     if ( isChecked == true ) {
         for (key of dataKeysNoTime) {
             d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));        
         }
         y.domain(getYRange( dataslice, dataKeys[1], 2 ));
-        yH.domain(getYRange( dataslice, dataKeys[2], 2 ));
+        d3_line[dataKeys[2]].Scale.domain(getYRange( dataslice, dataKeys[2], 2 ));
     } 
 
     // update mouseover circle and text position while zoomed
@@ -498,8 +497,8 @@ function zoomed() {
 
     // update x-axis
     focus.select(".axis--x").call(xAxis);
-    focus.select(".axis--y").call(yAxis);
-    focus.select(".axis--yH").call(yAxisRight);
+    focus.select(".axis--y").call(d3_line[dataKeys[1]].Axis);
+    focus.select(".axis--yH").call(d3_line[dataKeys[2]].Axis);
     // update context area
     context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
@@ -532,7 +531,7 @@ function brushed() {
 
     //update chart to hold only the visible data (for performance reasons)
     chartBody.select(".line").attr("d", line(dataslice));
-    chartBody.select(".line_humidity").attr("d", line_humidity(dataslice));
+    chartBody.select(".line_humidity").attr("d", d3_line[dataKeys[2]].Line(dataslice));
 
     // disable beow to auto zoom on release brush
     if ( isChecked == true ) {
@@ -543,7 +542,7 @@ function brushed() {
     } 
 
     focus.select(".axis--x").call(xAxis);
-    focus.select(".axis--y").call(yAxis);
+    focus.select(".axis--y").call(d3_line[dataKeys[1]].Axis);
 }
 
 function resetted() {
