@@ -20,14 +20,14 @@ body {
     stroke-opacity: 0.3;
 }
 
-.line {
+.line_Temperature {
     fill: none;
     stroke: #ffab00;
     stroke-width: 2px;
     stroke-opacity: 1.0;
 }
 
-.line_humidity {
+.line_Humidity {
     fill: none;
     stroke: #b700ff;
     stroke-width: 2px;
@@ -231,9 +231,11 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     // Scale the range of the data   
     x.domain(d3.extent(dataperm, function(d) { return d[dataKeys[0]]; }));
 
-    d3_line[dataKeys[1]].Scale.domain(getYRange( dataperm, dataKeys[1], 2 ));
-    d3_line[dataKeys[2]].Scale.domain(getYRange( dataperm, dataKeys[2], 2 ));
-    
+    for (var key of dataKeysNoTime) {
+        d3_line[key].Scale.domain(getYRange( dataperm, key, 2 ));
+        //d3_line[dataKeys[2]].Scale.domain(getYRange( dataperm, dataKeys[2], 2 ));
+    }
+
     for (var key of dataKeysNoTime) {
         d3_line[key].Scale.domain( getYRange( dataperm, key, 2 ) );
     }
@@ -246,29 +248,32 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis);
 
-    focus.append("g")
-        .attr("class", "axis axis--y")
-        .call(d3_line[dataKeys[1]].Axis);
-
-    focus.append("g")
-        .attr("class", "axis axis--yH")
-        .attr("transform", "translate(" + width + ",0)")
-        .call(d3_line[dataKeys[2]].Axis);
-        
     context.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + height2 + ")")
         .call(xAxis2);
 
-    chartBody.append("path")
-        .datum(dataperm)
-        .attr("class", "line")
-        .attr("d", d3_line[dataKeys[1]].Line);
-    
-    chartBody.append("path")
-        .datum(dataperm)
-        .attr("class", "line_humidity")
-        .attr("d", d3_line[dataKeys[2]].Line);
+    for (var key of dataKeysNoTime) {
+
+        focus.append("g")
+            .attr("class", "axis axis--y_" + key)
+            .call(d3_line[key].Axis);
+
+//        focus.append("g")
+//            .attr("class", "axis axis--yH")
+//            .attr("transform", "translate(" + width + ",0)")
+//            .call(d3_line[dataKeys[2]].Axis);
+
+        chartBody.append("path")
+            .datum(dataperm)
+            .attr("class", "line_" + key)
+            .attr("d", d3_line[key].Line);
+        
+//        chartBody.append("path")
+//            .datum(dataperm)
+//            .attr("class", "line_humidity")
+//            .attr("d", d3_line[dataKeys[2]].Line);
+    }
         
     context.append("path")
         .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
@@ -324,7 +329,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         //.style("pointer-events", "all")
         //.on("mouseover", function() { tip.style("display", null); })
         .on("mouseout", function() { tip.style("display", "none");
-                                     focus.select('.axis--y').style("display","none") })
+                                     focus.select(".axis--y_Temperature").style("display","none") })
         .on("mousemove", mousemove)
         .call(zoom);
         
@@ -335,12 +340,12 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
           
     // plot y-axis lhs
     focus.append("g")
-        .call(d3.axisLeft(y).ticks(0));
+        .call(d3.axisLeft(d3_line[dataKeys[1]].Scale).ticks(0));
 
     // plot y-axis rhs
-    focus.append("g")
-        .attr("transform", "translate(0" + width + ",0)")
-        .call(d3.axisRight(y).ticks(0));
+    //focus.append("g")
+    //    .attr("transform", "translate(0" + width + ",0)")
+    //    .call(d3.axisRight(d3_line[dataKeys[1]].Scale).ticks(0));
   
         
     document.getElementById("reset").style.visibility = "";
@@ -351,11 +356,11 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     document.getElementById("autoscale").style.top = "60px";
     document.getElementById("autoscale").style.left = totalWidth-100+"px";
     
-    l=chartBody.select('.line').node();
+    l=chartBody.select('.line_Temperature').node();
     isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
 
     // hide y-axis per default
-    focus.select('.axis--y').style("display","none");
+    focus.select('.axis--y_Temperature').style("display","none");
     // hide y-axis labe lper default
     svg.select(".y-axis-label").style("display","none");
     
@@ -371,7 +376,7 @@ function mouseDate(scale) {
 }
 
 function mouseDate2(scale) {
-    var lines = chartBody.select('.line').node();
+    var lines = chartBody.select('.line_Temperature').node();
     
     var g = d3.select("#group")._groups[0][0];
     var mouse = d3.mouse(g);
@@ -410,7 +415,7 @@ function mousemove() {
         tip.style("display", null);
 
         // show y-axis
-        focus.select('.axis--y').style("display",null)
+        focus.select('.axis--y_Temperature').style("display",null)
         // show y-axis label
         svg.select(".y-axis-label").style("display",null);
         // set y-axis label text
@@ -448,7 +453,7 @@ function mousemove() {
         tip.style("display", "none");  
 
         // hide y-axis
-        focus.select('.axis--y').style("display","none");
+        focus.select('.axis--y_Temperature').style("display","none");
         
         // hide y-axis label
         svg.select(".y-axis-label").style("display","none");
@@ -473,15 +478,18 @@ function zoomed() {
     } else {
         dataslice = dataperm.slice(drange[0], drange[1]);
     }
-    chartBody.select(".line").attr("d", d3_line[dataKeys[1]].Line(dataslice));
-    chartBody.select(".line_humidity").attr("d", d3_line[dataKeys[2]].Line(dataslice));
+
+    for (var key of dataKeysNoTime) {
+        chartBody.select(".line_" + key).attr("d", d3_line[key].Line(dataslice));
+        //chartBody.select(".line_humidity").attr("d", d3_line[dataKeys[2]].Line(dataslice));
+    }
 
     if ( isChecked == true ) {
         for (var key of dataKeysNoTime) {
             d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));        
         }
-        d3_line[dataKeys[1]].Scale.domain(getYRange( dataslice, dataKeys[1], 2 ));
-        d3_line[dataKeys[2]].Scale.domain(getYRange( dataslice, dataKeys[2], 2 ));
+        //d3_line[dataKeys[1]].Scale.domain(getYRange( dataslice, dataKeys[1], 2 ));
+        //d3_line[dataKeys[2]].Scale.domain(getYRange( dataslice, dataKeys[2], 2 ));
     } 
 
     // update mouseover circle and text position while zoomed
@@ -497,12 +505,15 @@ function zoomed() {
 
     // update x-axis
     focus.select(".axis--x").call(xAxis);
-    focus.select(".axis--y").call(d3_line[dataKeys[1]].Axis);
-    focus.select(".axis--yH").call(d3_line[dataKeys[2]].Axis);
+
+    for (var key of dataKeysNoTime) {
+        focus.select(".axis--y_" + key).call(d3_line[key].Axis);
+        //focus.select(".axis--yH").call(d3_line[dataKeys[2]].Axis);
+    }
     // update context area
     context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
-    l=chartBody.select('.line').node();
+    l=chartBody.select('.line_Temperature').node();
     isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
 }
 
@@ -529,9 +540,11 @@ function brushed() {
         dataslice = dataperm.slice(drange[0], drange[1]);
     }
 
-    //update chart to hold only the visible data (for performance reasons)
-    chartBody.select(".line").attr("d", d3_line[dataKeys[1]].Line(dataslice));
-    chartBody.select(".line_humidity").attr("d", d3_line[dataKeys[2]].Line(dataslice));
+    for (var key of dataKeysNoTime) {
+        //update chart to hold only the visible data (for performance reasons)
+        chartBody.select(".line_" + key).attr("d", d3_line[key].Line(dataslice));
+        //chartBody.select(".line_humidity").attr("d", d3_line[dataKeys[2]].Line(dataslice));
+    }
 
     // disable beow to auto zoom on release brush
     if ( isChecked == true ) {
@@ -542,7 +555,7 @@ function brushed() {
     } 
 
     focus.select(".axis--x").call(xAxis);
-    focus.select(".axis--y").call(d3_line[dataKeys[1]].Axis);
+    focus.select(".axis--y_Temperature").call(d3_line[dataKeys[1]].Axis);
 }
 
 function resetted() {
@@ -562,7 +575,7 @@ function on_checkbox() {
         isChecked = true;
         d3_line[dataKeys[1]].Scale.domain(getYRange( dataslice, dataKeys[1], 2 ));
         // update plot
-        chartBody.select(".line").attr("d", d3_line[dataKeys[1]].Line(dataslice));
+        chartBody.select(".line_Temperature").attr("d", d3_line[dataKeys[1]].Line(dataslice));
     } else {
         isChecked = false;
     }
