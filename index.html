@@ -75,11 +75,11 @@ body {
 // - add timestampt to tooltip
 
 var nMaxPts = 100;
-var minDist = 30;
+var constMinDist = 30;
 
 var isChecked = true;
 
-var isoLenPts;
+var isoLenPts = [];
 
 var svg = d3.select("svg"),
     focusHeight = +svg.attr("height") * 0.7,
@@ -316,8 +316,10 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     document.getElementById("autoscale").style.top = "60px";
     document.getElementById("autoscale").style.left = totalWidth-100+"px";
     
-    l=chartBody.select('.line_Temperature').node();
-    isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
+    for (var key of dataKeysNoTime) {
+        path=chartBody.select(".line_" + key).node();
+        isoLenPts[key] = getPointsOnPath(path, 2 * constMinDist - 1);
+    }
 
     // hide y-axis per default
     focus.select('.axis--y_Temperature').style("display","none");
@@ -363,9 +365,21 @@ function mouseDate2(scale) {
 
 function mousemove() {
     [d,mxy] = mouseDate(x);
+    //console.log("MOUSEMOVE");
+    
+    // Find curve with distance smaller than constMinDist
+    var curveKey = "None";
+    for (var key of dataKeysNoTime) {
+        var dist = getXYDist2(isoLenPts[key],mxy)[1];        
+        if (dist < constMinDist) {
+            curveKey = key;
+        }
+    }
 
-    if( getXYDist2(isoLenPts,mxy)[1] < minDist ) {   
-        d3.selectAll('.line_Temperature')
+    console.log(curveKey);
+        
+    if( curveKey != "None" ) {   
+        d3.selectAll(".line_" + curveKey)
             .style('opacity', 1.0);
         d3.select(this)
             .style('opacity', 0.0)
@@ -375,7 +389,7 @@ function mousemove() {
         tip.style("display", null);
 
         // show y-axis
-        focus.select('.axis--y_Temperature').style("display",null)
+        focus.select(".axis--y_" + curveKey).style("display",null)
         // show y-axis label
         svg.select(".y-axis-label").style("display",null);
         // set y-axis label text
@@ -387,18 +401,18 @@ function mousemove() {
                                     //return pos.x;
                                 })
             .attr('cy', function() {
-                                    return d3_line[dataKeys[1]].Scale(d[dataKeys[1]]);
+                                    return d3_line[curveKey].Scale(d[curveKey]);
                                     //return pos.y;
                                 });
 
         tip.select("text")
-             .text(formatDataString(d,dataKeys[1]))
+             .text(formatDataString(d,curveKey))
              .attr('x', function() {
                                     return x(d[dataKeys[0]])+10;
                                     //return pos.x + 10;
              })
              .attr('y', function() {
-                                     return d3_line[dataKeys[1]].Scale(d[dataKeys[1]])-10;
+                                     return d3_line[curveKey].Scale(d[curveKey])-10;
                                      //return pos.y;
              });
 
@@ -413,7 +427,7 @@ function mousemove() {
         tip.style("display", "none");  
 
         // hide y-axis
-        focus.select('.axis--y_Temperature').style("display","none");
+        focus.select(".axis--y_" + curveKey).style("display","none");
         
         // hide y-axis label
         svg.select(".y-axis-label").style("display","none");
@@ -423,6 +437,8 @@ function mousemove() {
 function zoomed() {
     // ignore zoom-by-brush
     if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; 
+
+    console.log("ZOOM");
 
     var t = d3.event.transform;
 
@@ -469,14 +485,18 @@ function zoomed() {
     // update context area
     context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
-    l=chartBody.select('.line_Temperature').node();
-    isoLenPts = getPointsOnPath(l, 2 * minDist - 1);
+    for (var key of dataKeysNoTime) {
+        path=chartBody.select(".line_" + key).node();
+        isoLenPts[key] = getPointsOnPath(path, 2 * constMinDist - 1);
+    }
 }
 
 function brushed() {
     // ignore brush-by-zoom
     if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; 
-    
+
+    console.log("BRUSH");
+
     // re-map domain of x-axis
     var s = d3.event.selection || x2.range();
     x.domain(s.map(x2.invert, x2));
