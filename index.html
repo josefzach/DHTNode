@@ -74,7 +74,7 @@ body {
 // TODO:
 // - add timestampt to tooltip
 
-var nMaxPts = 100;
+var nMaxPts = 200;
 var constMinDist = 20;
 
 var isChecked = true;
@@ -173,6 +173,7 @@ var dataslice;
 var dataKeys;
 var dataKeysNoTime;
 var lastActiveCurve = "None";
+var invalidCapturePts = true;
 
 d3.csv("ESP-7E4A1E.node", function(error, data) {
 	if (error) throw error;
@@ -372,6 +373,15 @@ function mousemove() {
     [d,mxy] = mouseDate(x);
     //console.log("MOUSEMOVE");
     
+    if (invalidCapturePts == true) {
+        for (var key of dataKeysNoTime) {
+            path=chartBody.select(".line_" + key).node();
+            isoLenPts[key] = getPointsOnPath(path, 2 * constMinDist - 1);
+        }
+        invalidCapturePts = false;
+        console.log("CAPTURE POINTS READY");
+    }
+
     // Find curve with distance smaller than constMinDist
     var loopKeys = dataKeysNoTime;
     if (lastActiveCurve != "None") {
@@ -504,10 +514,7 @@ function zoomed() {
     // update context area
     context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 
-    for (var key of dataKeysNoTime) {
-        path=chartBody.select(".line_" + key).node();
-        isoLenPts[key] = getPointsOnPath(path, 2 * constMinDist - 1);
-    }
+    invalidCapturePts = true;
 }
 
 function brushed() {
