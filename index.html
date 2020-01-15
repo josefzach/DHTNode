@@ -75,7 +75,7 @@ body {
 // - add timestampt to tooltip
 
 var nMaxPts = 100;
-var constMinDist = 30;
+var constMinDist = 20;
 
 var isChecked = true;
 
@@ -172,6 +172,7 @@ var dataperm;
 var dataslice;
 var dataKeys;
 var dataKeysNoTime;
+var lastActiveCurve = "None";
 
 d3.csv("ESP-7E4A1E.node", function(error, data) {
 	if (error) throw error;
@@ -294,7 +295,9 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         //.style("pointer-events", "all")
         //.on("mouseover", function() { tip.style("display", null); })
         .on("mouseout", function() { tip.style("display", "none");
-                                     focus.select(".axis--y_Temperature").style("display","none") })
+                                     for (var key of dataKeysNoTime) { 
+                                        focus.select(".axis--y_" + key).style("display","none");
+                                     } })
         .on("mousemove", mousemove)
         .call(zoom);
         
@@ -322,7 +325,9 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     }
 
     // hide y-axis per default
-    focus.select('.axis--y_Temperature').style("display","none");
+    for (var key of dataKeysNoTime) { 
+        focus.select(".axis--y_" + key).style("display","none");
+    }
     // hide y-axis labe lper default
     svg.select(".y-axis-label").style("display","none");
     
@@ -368,18 +373,28 @@ function mousemove() {
     //console.log("MOUSEMOVE");
     
     // Find curve with distance smaller than constMinDist
-    var curveKey = "None";
-    for (var key of dataKeysNoTime) {
+    var loopKeys = dataKeysNoTime;
+    if (lastActiveCurve != "None") {
+        loopKeys = [];
+        loopKeys.push(lastActiveCurve);
+    }
+
+    var activeCurve = "None";
+    for (var key of loopKeys) {
         var dist = getXYDist2(isoLenPts[key],mxy)[1];        
         if (dist < constMinDist) {
-            curveKey = key;
+            activeCurve = key;
+            lastActiveCurve = key;
+            break;
+        } else {
+            lastActiveCurve = "None";
         }
     }
 
-    console.log(curveKey);
+    console.log(lastActiveCurve);
         
-    if( curveKey != "None" ) {   
-        d3.selectAll(".line_" + curveKey)
+    if( activeCurve != "None" ) {   
+        d3.selectAll(".line_" + activeCurve)
             .style('opacity', 1.0);
         d3.select(this)
             .style('opacity', 0.0)
@@ -389,7 +404,7 @@ function mousemove() {
         tip.style("display", null);
 
         // show y-axis
-        focus.select(".axis--y_" + curveKey).style("display",null)
+        focus.select(".axis--y_" + activeCurve).style("display",null)
         // show y-axis label
         svg.select(".y-axis-label").style("display",null);
         // set y-axis label text
@@ -401,18 +416,18 @@ function mousemove() {
                                     //return pos.x;
                                 })
             .attr('cy', function() {
-                                    return d3_line[curveKey].Scale(d[curveKey]);
+                                    return d3_line[activeCurve].Scale(d[activeCurve]);
                                     //return pos.y;
                                 });
 
         tip.select("text")
-             .text(formatDataString(d,curveKey))
+             .text(formatDataString(d,activeCurve))
              .attr('x', function() {
                                     return x(d[dataKeys[0]])+10;
                                     //return pos.x + 10;
              })
              .attr('y', function() {
-                                     return d3_line[curveKey].Scale(d[curveKey])-10;
+                                     return d3_line[activeCurve].Scale(d[activeCurve])-10;
                                      //return pos.y;
              });
 
@@ -427,8 +442,12 @@ function mousemove() {
         tip.style("display", "none");  
 
         // hide y-axis
-        focus.select(".axis--y_" + curveKey).style("display","none");
-        
+        for (var key of dataKeysNoTime) { 
+            focus.select(".axis--y_" + key).style("display","none");
+        }
+        // hide x-axis
+        //focus.select(".axis--x").style("display","none");
+
         // hide y-axis label
         svg.select(".y-axis-label").style("display","none");
     }
