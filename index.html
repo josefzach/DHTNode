@@ -280,7 +280,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .attr("class", "y")
         .style("fill", "none")
         .style("stroke", "steelblue")
-        .attr("r", 4)
+        .attr("r", 3.5)
         .attr("clip-path", "url(#clip)");    
         
     tip.append("text")
@@ -422,6 +422,8 @@ function mousemove() {
         svg.select(".y-axis-label").text(activeCurve);
 
         tip.select("circle")
+            .style("fill", d3.selectAll(".line_" + activeCurve).style('stroke'))
+            .style("stroke", d3.selectAll(".line_" + activeCurve).style('stroke'))
             .attr('cx', function() {
                                     return x(d[dataKeys[0]]);
                                     //return pos.x;
