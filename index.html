@@ -238,7 +238,6 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .call(xAxis2);
 
     for (var key of dataKeysNoTime) {
-
         focus.append("g")
             .attr("class", "axis axis--y_" + key)
             .call(d3_line[key].Axis);
@@ -280,7 +279,6 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
         .attr("dy", "1em")
         .style("font-size","12px")
         .style("text-anchor", "middle")
-        .text("Temperature");
 
     tip.append("circle")
         .attr("class", "y")
@@ -336,7 +334,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     for (var key of dataKeysNoTime) { 
         focus.select(".axis--y_" + key).style("display","none");
     }
-    // hide y-axis labe lper default
+    // hide y-axis label per default
     svg.select(".y-axis-label").style("display","none");
     
 });
@@ -539,7 +537,10 @@ function brushed() {
     } 
 
     focus.select(".axis--x").call(xAxis);
-    focus.select(".axis--y_Temperature").call(d3_line[dataKeys[1]].Axis);
+    
+    for (var key of dataKeysNoTime) {
+        focus.select(".axis--y_" + key).call(d3_line[key].Axis);
+    }
 }
 
 function resetted() {
@@ -557,9 +558,12 @@ function on_checkbox() {
     // If the checkbox is checked, display the output text
     if (checkBox.checked == true){
         isChecked = true;
-        d3_line[dataKeys[1]].Scale.domain(getYRange( dataslice, dataKeys[1], 2 ));
-        // update plot
-        chartBody.select(".line_Temperature").attr("d", d3_line[dataKeys[1]].Line(dataslice));
+        // update plots scaling
+        for (var key of dataKeysNoTime) {
+            d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));
+            chartBody.select(".line_" + key).attr("d", d3_line[key].Line(dataslice));
+        }        
+        
     } else {
         isChecked = false;
     }
