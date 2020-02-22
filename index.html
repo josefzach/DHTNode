@@ -41,9 +41,15 @@ body {
     stroke-opacity: 1.0;
 }
 
-.contextline {
+.ctxt_line_Temperature {
     fill: none;
     stroke: #ffab00;
+    stroke-width: 1px;
+}
+
+.ctxt_line_Humidity {
+    fill: none;
+    stroke: #b700ff;
     stroke-width: 1px;
 }
 
@@ -122,16 +128,10 @@ var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
     };
     
 var x = d3.scaleTime().range([0, width]),
-    x2 = d3.scaleTime().range([0, width]),
-    y2 = d3.scaleLinear().range([height2, 0]);
+    x_ctxt = d3.scaleTime().range([0, width]);
 
 var d3_line = [];
-
-var line2 = d3.line()
-    .defined(function(d) { return d[dataKeys[1]] != 0; })
-    .x(function (d) { return x2(d[dataKeys[0]]); })
-    .y(function (d) { return y2(d[dataKeys[1]]); })
-    .curve(d3.curveMonotoneX);
+var d3_ctxt_line = [];
 
 var zoom = d3.zoom()
     .scaleExtent([1, Infinity])
@@ -148,7 +148,7 @@ var xAxis = d3.axisBottom(x)
     .tickSize(-height)
     .tickPadding(10);
 
-var xAxis2 = d3.axisBottom(x2);
+var xAxis_Ctxt = d3.axisBottom(x_ctxt);
         
 var view = svg.append("rect")
     .attr("class", "view")
@@ -200,6 +200,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
 
     // load d3 lines, scales and axes per dataset
     for (var key of dataKeysNoTime) {
+        // initialize lines
         d3_line[key] = [];
         d3_line[key].Scale = d3.scaleLinear().range([height, 0]);
         d3_line[key].Axis = d3.axisRight(d3_line[key].Scale)
@@ -211,22 +212,27 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
             .x(new Function('d', 'return x(d["'+dataKeys[0]+'"]);'))
             .y(new Function('d', 'return d3_line["'+key+'"].Scale(d["'+key+'"]);'))
             .curve(d3.curveMonotoneX);
+            
+        // initialize context lines
+        d3_ctxt_line[key] = [];
+        d3_ctxt_line[key].Scale = d3.scaleLinear().range([height2, 0]);
+        // no axis
+        d3_ctxt_line[key].Line = d3.line()
+            .defined(function(d) { return d[key] != 0; })
+            .x(new Function('d', 'return x_ctxt(d["'+dataKeys[0]+'"]);'))
+            .y(new Function('d', 'return d3_ctxt_line["'+key+'"].Scale(d["'+key+'"]);'))
+            .curve(d3.curveMonotoneX);            
     }
 
     // Scale the range of the data   
     x.domain(d3.extent(dataperm, function(d) { return d[dataKeys[0]]; }));
-
+    x_ctxt.domain(x.domain());
+    
     for (var key of dataKeysNoTime) {
         d3_line[key].Scale.domain(getYRange( dataperm, key, 2 ));
-    }
-
-    for (var key of dataKeysNoTime) {
-        d3_line[key].Scale.domain( getYRange( dataperm, key, 2 ) );
-    }
-
-    x2.domain(x.domain());
-    y2.domain(d3_line[dataKeys[1]].Scale.domain());    
-
+        d3_ctxt_line[key].Scale.domain(d3_line[key].Scale.domain());
+    }  
+    
     focus.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + height + ")")
@@ -235,7 +241,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
     context.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + height2 + ")")
-        .call(xAxis2);
+        .call(xAxis_Ctxt);
 
     for (var key of dataKeysNoTime) {
         focus.append("g")
@@ -243,15 +249,15 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
             .call(d3_line[key].Axis);
 
         chartBody.append("path")
-            .datum(dataperm)
+            .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
             .attr("class", "line_" + key)
             .attr("d", d3_line[key].Line);
-    }
-        
-    context.append("path")
+    
+        context.append("path")
         .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
-        .attr("class", "contextline")
-        .attr("d", line2);
+        .attr("class", "ctxt_line_" + key)
+        .attr("d", d3_ctxt_line[key].Line);
+    }
 
     context.append("g")
         .attr("class", "brush")
@@ -314,7 +320,7 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
           
     // plot y-axis lhs
     focus.append("g")
-        .call(d3.axisLeft(d3_line[dataKeys[1]].Scale).ticks(0));
+        .call(d3.axisLeft(d3_line[dataKeys[1]].Scale).ticks(0));    // dataKeys[1] is ok here
   
         
     document.getElementById("reset").style.visibility = "";
@@ -453,7 +459,7 @@ function zoomed() {
 
     var t = d3.event.transform;
 
-    x.domain(t.rescaleX(x2).domain());
+    x.domain(t.rescaleX(x_ctxt).domain());
 
     var domain = x.domain();
     var drange = [ dataperm.findIndex(d => d[dataKeys[0]].getTime() > domain[0].getTime()), 
@@ -506,8 +512,8 @@ function brushed() {
     console.log("BRUSH");
 
     // re-map domain of x-axis
-    var s = d3.event.selection || x2.range();
-    x.domain(s.map(x2.invert, x2));
+    var s = d3.event.selection || x_ctxt.range();
+    x.domain(s.map(x_ctxt.invert, x_ctxt));
 
     svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
         .scale(width / (s[1] - s[0]))
@@ -603,14 +609,18 @@ function reduceArray( data, drange, nPts ) {
 
     var rdata = [];
     var el;
-
+    var sign;
+    
     for (i = 0; i < ind.length-1; i=i+1) {
         el = {...data[ind[i]]};
 
         for (var key of dataKeysNoTime) {
                       // using max has performance advantage?
                       //arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
-            el[key] = Math.max(...getVal(data.slice(ind[i],ind[i+1]), key) );       
+            
+            //el[key] = Math.max(...getVal(data.slice(ind[i],ind[i+1]), key) );
+            sign = Math.sign(...getVal(data.slice(ind[i],ind[i+1]), key) );  
+            el[key] = sign * Math.max( Math.abs(...getVal(data.slice(ind[i],ind[i+1]), key) ) );              
         }
         rdata.push(el);
     }
