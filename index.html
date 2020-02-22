@@ -342,38 +342,13 @@ d3.csv("ESP-7E4A1E.node", function(error, data) {
 });
 
 function mouseDate(scale) {
+    console.log("mouseData");
     var g = d3.select("#group")._groups[0][0];
     var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
     var i = bisectDate(dataslice, x0, 1);
     i = Math.min(...[i, dataslice.length-1]);    
     var d = x0 - dataslice[i-1][dataKeys[0]] > dataslice[i][dataKeys[0]] - x0 ? dataslice[i] : dataslice[i-1];
     return [d, d3.mouse(g)];
-}
-
-function mouseDate2(scale) {
-    var lines = chartBody.select('.line_Temperature').node();
-    
-    var g = d3.select("#group")._groups[0][0];
-    var mouse = d3.mouse(g);
-    var beginning = 0,
-        end = lines.getTotalLength(),
-        target = null;
-
-    var steps = 0;
-    while (true){
-      target = Math.floor((beginning + end) / 2);
-      pos = lines.getPointAtLength(target);
-      if ((target === end || target === beginning) && pos.x !== mouse[0]) {
-          break;
-      }
-      steps += 1;
-      if (Math.round(pos.x) > mouse[0])      end = target; //speed up matching with Math.round??
-      //if (pos.x > mouse[0])      end = target; 
-      else if (Math.round(pos.x) < mouse[0]) beginning = target;
-      //else if (pos.x < mouse[0]) beginning = target;
-      else break; //position found
-    }
-    return pos;
 }
 
 function mousemove() {
@@ -398,7 +373,7 @@ function mousemove() {
 
     var activeCurve = "None";
     for (var key of loopKeys) {
-        var dist = getXYDist2(isoLenPts[key],mxy)[1];        
+        var dist = getXYDist(isoLenPts[key],mxy)[1];        
         if (dist < constMinDist) {
             activeCurve = key;
             lastActiveCurve = key;
@@ -642,29 +617,7 @@ function getYRange( data, key, margin ){
     return [d3.min(data, function (d) { return d[key]; })-margin, d3.max(data, function (d) { return d[key]; })+margin];
 }
 
-function getXYData( data, key ){
-    var xyarray = [];
-    data.forEach(d => xyarray.push([x(d[dataKeys[0]]),d3_line[key].Scale(d[key])]));
-    return xyarray;
-}
-
 function getXYDist( xyarray, mxy ){
-    var xydist = [];
-    var max = 1e100;
-    var dist;
-    var maxind;
-    xyarray.forEach(function(d,index) {
-        dist = Math.sqrt( Math.pow(d[0]-mxy[0],2) + Math.pow(d[1]-mxy[1],2) );
-        if ( dist < max ){
-            max = dist;
-            maxind = index;
-        }
-        xydist.push( dist );
-    });
-    return [xydist, max, maxind];
-}
-
-function getXYDist2( xyarray, mxy ){
     var xydist = [];
     var max = 1e100;
     var dist;
