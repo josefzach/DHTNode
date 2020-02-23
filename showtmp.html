@@ -137,9 +137,6 @@ var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
         return formatValue(d[key]) + unitString;
     };
     
-var x = d3.scaleTime().range([0, width]),
-    x_ctxt = d3.scaleTime().range([0, width]);
-
 var d3_line = [];
 var d3_ctxt_line = [];
 
@@ -152,13 +149,6 @@ var zoom = d3.zoom()
 var brush = d3.brushX()
     .extent([[0, 0], [width, height2]])
     .on("brush end", brushed);
-    
-var xAxis = d3.axisBottom(x)
-    .ticks((width + 2) / (height + 2) * 5)
-    .tickSize(-height)
-    .tickPadding(10);
-
-var xAxis_Ctxt = d3.axisBottom(x_ctxt);
         
 var view = svg.append("rect")
     .attr("class", "view")
@@ -185,8 +175,8 @@ var tip = svg.append("g")
 document.getElementById("reset").style.visibility = "hidden";
 document.getElementById("autoscale").style.visibility = "hidden";
 
-var dataperm;
-var dataslice;
+var dataperm = [];
+var dataslice = [];
 var dataKeys;
 var dataKeysNoTime;
 var lastActiveCurve = "None";
@@ -202,16 +192,16 @@ function readData(sensorList) {
     d3.csv(sensor+".node", function(error, data) {
 	    if (error) throw error;
         
-        dataperm = data;
+        dataperm[sensor] = data;
         
-        dataKeys = dataperm.columns;
+        dataKeys = dataperm[sensor].columns;
         
         dataKeysNoTime = dataKeys.slice(1);
         // allow only Temperature
         dataKeysNoTime = ["Temperature", "Humidity"];
         
         // convert data from string to corresponding format
-        dataperm.forEach(function(d,i) {
+        dataperm[sensor].forEach(function(d,i) {
             d[dataKeys[0]] = parseTime(d[dataKeys[0]]);
             for (var key of dataKeysNoTime) {
                 d[key] = +d[key];
@@ -222,59 +212,70 @@ function readData(sensorList) {
         for (var key of dataKeysNoTime) {
             // initialize lines
             d3_line[sensor+key] = [];
-            d3_line[sensor+key].Scale = d3.scaleLinear().range([height, 0]);
-            d3_line[sensor+key].Axis = d3.axisRight(d3_line[sensor+key].Scale)
+            d3_line[sensor+key].yScale = d3.scaleLinear().range([height, 0]);
+            d3_line[sensor+key].xScale = d3.scaleTime().range([0, width]);
+            d3_line[sensor+key].yAxis = d3.axisRight(d3_line[sensor+key].yScale)
                 .ticks(5)
                 .tickSize(width)
                 .tickPadding(- 20 - width);
+            d3_line[sensor+key].xAxis = d3.axisBottom(d3_line[sensor+key].xScale)
+                .ticks((width + 2) / (height + 2) * 5)
+                .tickSize(-height)
+                .tickPadding(10);
             d3_line[sensor+key].Line = d3.line()
                 .defined(function(d) { return d[key] != 0; })
-                .x(new Function('d', 'return x(d["'+dataKeys[0]+'"]);'))
-                .y(new Function('d', 'return d3_line["'+sensor+key+'"].Scale(d["'+key+'"]);'))
+                .x(new Function('d', 'return d3_line["'+sensor+key+'"].xScale(d["'+dataKeys[0]+'"]);'))
+                .y(new Function('d', 'return d3_line["'+sensor+key+'"].yScale(d["'+key+'"]);'))
                 .curve(d3.curveMonotoneX);
                 
             // initialize context lines
             d3_ctxt_line[sensor+key] = [];
-            d3_ctxt_line[sensor+key].Scale = d3.scaleLinear().range([height2, 0]);
-            // no axis
+            d3_ctxt_line[sensor+key].yScale = d3.scaleLinear().range([height2, 0]);
+            d3_ctxt_line[sensor+key].xScale = d3.scaleTime().range([0, width]);
+            // no y-axis
+            d3_ctxt_line[sensor+key].xAxis = d3.axisBottom(d3_ctxt_line[sensor+key].xScale);
             d3_ctxt_line[sensor+key].Line = d3.line()
                 .defined(function(d) { return d[key] != 0; })
-                .x(new Function('d', 'return x_ctxt(d["'+dataKeys[0]+'"]);'))
-                .y(new Function('d', 'return d3_ctxt_line["'+sensor+key+'"].Scale(d["'+key+'"]);'))
+                .x(new Function('d', 'return d3_ctxt_line["'+sensor+key+'"].xScale(d["'+dataKeys[0]+'"]);'))
+                .y(new Function('d', 'return d3_ctxt_line["'+sensor+key+'"].yScale(d["'+key+'"]);'))
                 .curve(d3.curveMonotoneX);            
         }
-
-        // Scale the range of the data   
-        x.domain(d3.extent(dataperm, function(d) { return d[dataKeys[0]]; }));
-        x_ctxt.domain(x.domain());
         
         for (var key of dataKeysNoTime) {
-            d3_line[sensor+key].Scale.domain(getYRange( dataperm, key, 2 ));
-            d3_ctxt_line[sensor+key].Scale.domain(d3_line[sensor+key].Scale.domain());
+            // Scale the range of the data   
+            d3_line[sensor+key].xScale.domain(d3.extent(dataperm[sensor], function(d) { return d[dataKeys[0]]; }));
+            d3_ctxt_line[sensor+key].xScale.domain(d3_line[sensor+key].xScale.domain());
+        }
+        
+        for (var key of dataKeysNoTime) {
+            d3_line[sensor+key].yScale.domain(getYRange( dataperm[sensor], key, 2 ));
+            d3_ctxt_line[sensor+key].yScale.domain(d3_line[sensor+key].yScale.domain());
         }  
         
-        focus.append("g")
-            .attr("class", "axis axis--x")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis);
+        for (var key of dataKeysNoTime) {
+            focus.append("g")
+                .attr("class", "axis axis--x")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3_line[sensor+key].xAxis);
 
-        context.append("g")
-            .attr("class", "axis axis--x")
-            .attr("transform", "translate(0," + height2 + ")")
-            .call(xAxis_Ctxt);
-
+            context.append("g")
+                .attr("class", "axis axis--x")
+                .attr("transform", "translate(0," + height2 + ")")
+                .call(d3_ctxt_line[sensor+key].xAxis);
+        }
+        
         for (var key of dataKeysNoTime) {
             focus.append("g")
                 .attr("class", "axis axis--y_" + sensor+key)
-                .call(d3_line[sensor+key].Axis);
+                .call(d3_line[sensor+key].yAxis);
 
             chartBody.append("path")
-                .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
+                .datum(reduceArray( dataperm[sensor], [0,dataperm[sensor].length], nMaxPts ))
                 .attr("class", "line_" + sensor+key)
                 .attr("d", d3_line[sensor+key].Line);
         
             context.append("path")
-            .datum(reduceArray( dataperm, [0,dataperm.length], nMaxPts ))
+            .datum(reduceArray( dataperm[sensor], [0,dataperm[sensor].length], nMaxPts ))
             .attr("class", "ctxt_line_" + sensor+key)
             .attr("d", d3_ctxt_line[sensor+key].Line);
         }
@@ -316,11 +317,11 @@ function readData(sensorList) {
         // plot x-axis
         focus.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x).ticks(0));
+            .call(d3.axisBottom(d3_line[sensor+dataKeys[1]].xScale).ticks(0));
               
         // plot y-axis lhs
         focus.append("g")
-            .call(d3.axisLeft(d3_line[sensor+dataKeys[1]].Scale).ticks(0));    // TODO: fix
+            .call(d3.axisLeft(d3_line[sensor+dataKeys[1]].yScale).ticks(0));    // TODO: fix
       
             
         document.getElementById("reset").style.visibility = "";
@@ -343,17 +344,20 @@ function readData(sensorList) {
         // hide y-axis label per default
         svg.select(".y-axis-label").style("display","none");
         
+        // recursive call
         if( sensorList.length > 1 ) {
             readData(sensorList.slice(1));
         }
             
     });
     
+
     //context.append("g")
-    //    .attr("class", "brush");
-        //.call(brush);
-        //.call(brush.move, x.range());     // TODO: fix
-        
+        //.attr("class", "brush")
+        //.call(brush)
+        //.call(brush.move, d3_line[sensor+"Temperature"].xScale.range());     // TODO: fix
+
+
     svg.append("rect")
         .attr("id","rect")
         .attr("class", "zoom")
@@ -375,14 +379,15 @@ function readData(sensorList) {
 function mouseDate(scale) {
     var g = d3.select("#group")._groups[0][0];
     var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
-    var i = bisectDate(dataslice, x0, 1);
-    i = Math.min(...[i, dataslice.length-1]);    
-    var d = x0 - dataslice[i-1][dataKeys[0]] > dataslice[i][dataKeys[0]] - x0 ? dataslice[i] : dataslice[i-1];
+    for( var sensor of sensorList ) {
+        var i = bisectDate(dataslice[sensor], x0, 1);
+        i = Math.min(...[i, dataslice[sensor].length-1]);    
+        var d = x0 - dataslice[sensor][i-1][dataKeys[0]] > dataslice[sensor][i][dataKeys[0]] - x0 ? dataslice[sensor][i] : dataslice[sensor][i-1];
+    }
     return [d, d3.mouse(g)];
 }
 
 function mousemove() {
-    [d,mxy] = mouseDate(x);
     
     if (invalidCapturePts == true) {
         for( var sensor of sensorList ) {
@@ -405,6 +410,7 @@ function mousemove() {
     var activeCurve = "None";
     for( var sensor of sensorList ) {
         for (var key of loopKeys) {
+            [d,mxy] = mouseDate(d3_line[sensor+key].xScale);
             var dist = getXYDist(isoLenPts[sensor+key],mxy)[1];        
             if (dist < constMinDist) {
                 activeCurve = sensor+key;
@@ -443,7 +449,7 @@ function mousemove() {
                                     //return pos.x;
                                 })
             .attr('cy', function() {
-                                    return d3_line[activeCurve].Scale(d[activeCurve]);
+                                    return d3_line[activeCurve].yScale(d[activeCurve]);
                                     //return pos.y;
                                 });
 
@@ -454,7 +460,7 @@ function mousemove() {
                                     //return pos.x + 10;
              })
              .attr('y', function() {
-                                     return d3_line[activeCurve].Scale(d[activeCurve])-10;
+                                     return d3_line[activeCurve].yScale(d[activeCurve])-10;
                                      //return pos.y;
              });
 
@@ -493,26 +499,26 @@ function zoomed() {
     x.domain(t.rescaleX(x_ctxt).domain());
 
     var domain = x.domain();
-    var drange = [ dataperm.findIndex(d => d[dataKeys[0]].getTime() > domain[0].getTime()), 
-                   dataperm.findIndex(d => d[dataKeys[0]].getTime() >= domain[1].getTime()) ];
-    
-    if ( (drange[1]-drange[0]) > nMaxPts ) {
-        dataslice = reduceArray( dataperm, drange, nMaxPts );
+    var drange = [ dataperm[sensor].findIndex(d => d[dataKeys[0]].getTime() > domain[0].getTime()), 
+                   dataperm[sensor].findIndex(d => d[dataKeys[0]].getTime() >= domain[1].getTime()) ];
 
-    } else {
-        dataslice = dataperm.slice(drange[0], drange[1]);
-    }
+    for( var sensor of sensorList ) {    
+        if ( (drange[1]-drange[0]) > nMaxPts ) {
+            dataslice[sensor] = reduceArray( dataperm[sensor], drange, nMaxPts );
 
-    for( var sensor of sensorList ) {
+        } else {
+            dataslice[sensor] = dataperm[sensor].slice(drange[0], drange[1]);
+        }
+
         for (var key of dataKeysNoTime) {
-            chartBody.select(".line_" + sensor+key).attr("d", d3_line[sensor+key].Line(dataslice));
+            chartBody.select(".line_" + sensor+key).attr("d", d3_line[sensor+key].Line(dataslice[sensor]));
         }
     }
 
     if ( isChecked == true ) {
         for( var sensor of sensorList ) {
             for (var key of dataKeysNoTime) {
-                d3_line[sensor+key].Scale.domain(getYRange( dataslice, key, 2 ));        
+                d3_line[sensor+key].yScale.domain(getYRange( dataslice[sensor], key, 2 ));        
             }
         }
     } 
@@ -523,11 +529,11 @@ function zoomed() {
             .classed("zoomed", true)
             .attr("id","one")
             .attr('cx', function() {return x(d[dataKeys[0]]); })
-            .attr('cy', function() {return d3_line[lastActiveCurve].Scale(d[lastActiveCurve]); });                
+            .attr('cy', function() {return d3_line[lastActiveCurve].yScale(d[lastActiveCurve]); });                
         tip.select("text")
             .text(formatDataString(d,lastActiveCurve))
             .attr('x', function() {return x(d[dataKeys[0]])+10;})
-            .attr('y', function() {return d3_line[lastActiveCurve].Scale(d[lastActiveCurve])-10; });
+            .attr('y', function() {return d3_line[lastActiveCurve].yScale(d[lastActiveCurve])-10; });
     }
     
     // update x-axis
@@ -535,7 +541,7 @@ function zoomed() {
 
     for( var sensor of sensorList ) {
         for (var key of dataKeysNoTime) {
-            focus.select(".axis--y_" + sensor+key).call(d3_line[sensor+key].Axis);
+            focus.select(".axis--y_" + sensor+key).call(d3_line[sensor+key].yAxis);
         }
     }
     // update context area
@@ -560,19 +566,20 @@ function brushed() {
 
     var domain = x.domain();    
 
-    var drange = [ dataperm.findIndex(d => d[dataKeys[0]].getTime() > domain[0].getTime()), 
-                   dataperm.findIndex(d => d[dataKeys[0]].getTime() >= domain[1].getTime()) ];
+    var drange = [ dataperm[sensor].findIndex(d => d[dataKeys[0]].getTime() > domain[0].getTime()), 
+                   dataperm[sensor].findIndex(d => d[dataKeys[0]].getTime() >= domain[1].getTime()) ];
   
-    if ( (drange[1]-drange[0]) > nMaxPts ) {
-        dataslice = reduceArray( dataperm, drange, nMaxPts );
-    } else {
-        dataslice = dataperm.slice(drange[0], drange[1]);
-    }
-
     for (var sensor of sensorList) {
+        if ( (drange[1]-drange[0]) > nMaxPts ) {
+            dataslice[sensor] = reduceArray( dataperm[sensor], drange, nMaxPts );
+        } else {
+            dataslice[sensor] = dataperm[sensor].slice(drange[0], drange[1]);
+        }
+
+    
         for (var key of dataKeysNoTime) {
             //update chart to hold only the visible data (for performance reasons)
-            chartBody.select(".line_" + sensor+key).attr("d", d3_line[sensor+key].Line(dataslice));
+            chartBody.select(".line_" + sensor+key).attr("d", d3_line[sensor+key].Line(dataslice[sensor]));
         }
     }
     
@@ -580,7 +587,7 @@ function brushed() {
     if ( isChecked == true ) {
         for (var sensor of sensorList) {
             for (var key of dataKeysNoTime) {
-                d3_line[sensor+key].Scale.domain(getYRange( dataslice, sensor+key, 2 ));        
+                d3_line[sensor+key].yScale.domain(getYRange( dataslice[sensor], sensor+key, 2 ));        
             }
         }
     } 
@@ -588,7 +595,7 @@ function brushed() {
     focus.select(".axis--x").call(xAxis);
     for (var sensor of sensorList) {
         for (var key of dataKeysNoTime) {
-            focus.select(".axis--y_" + sensor+key).call(d3_line[sensor+key].Axis);
+            focus.select(".axis--y_" + sensor+key).call(d3_line[sensor+key].yAxis);
         }
     }
 }
@@ -612,8 +619,8 @@ function on_checkbox() {
         // update plots scaling
         for( var sensor of sensorList ) {
             for (var key of dataKeysNoTime) {
-                d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));
-                chartBody.select(".line_" + sensor+key).attr("d", d3_line[sensor+key].Line(dataslice));
+                d3_line[key].yScale.domain(getYRange( dataslice[sensor], key, 2 ));
+                chartBody.select(".line_" + sensor+key).attr("d", d3_line[sensor+key].Line(dataslice[sensor]));
             }  
         }      
         
