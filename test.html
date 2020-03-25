@@ -87,6 +87,8 @@ body {
 
 var nMaxPts = 200;
 var constMinDist = 20;
+var invalidCapturePts = true;
+var lastActiveCurve = "None";
 
 var isChecked = true;
 
@@ -110,7 +112,7 @@ var svg = d3.select("svg")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
-    bisectDate = d3.bisector(function(d) { return d[dataKeys[0]]; }).left;
+    bisectDate = d3.bisector(function(d) { return d[timeKey]; }).left;
     formatValue = d3.format(",.2f"),
     
     formatDataString = function(d,key) {
@@ -181,7 +183,7 @@ document.getElementById("reset").style.visibility = "hidden";
 document.getElementById("autoscale").style.visibility = "hidden";
 
 var dataperm = [];
-var dataslice;
+var dataslice = [];
 
 var sensorList = ["ESP-7E4A1E", "dummy"];
 var dataKey = "Temperature";
@@ -326,7 +328,7 @@ Promise.all( fcnArray )
             //.style("pointer-events", "all")
             //.on("mouseover", function() { tip.style("display", null); })
             .on("mouseout", function() { tip.style("display", "none");
-                                         focus.select(".axis--y").style("display","none");
+                                         //focus.select(".axis--y").style("display","none");
                                          })
             .on("mousemove", mousemove)
             .call(zoom);
@@ -355,27 +357,37 @@ Promise.all( fcnArray )
             isoLenPts[sensor] = getPointsOnPath(path, 2 * constMinDist - 1);
         }
         
-        focus.select(".axis--y").style("display","none");
+        //focus.select(".axis--y").style("display","none");
         
         // hide y-axis label per default
-        svg.select(".y-axis-label").style("display","none"); 
-                       
+        //svg.select(".y-axis-label").style("display","none"); 
+
+        // show y-axis
+        focus.select(".axis--y").style("display",null)
+        // show y-axis label
+        svg.select(".y-axis-label").style("display",null);
+        // set y-axis label text
+        svg.select(".y-axis-label").text(dataKey);
+                               
     }).catch(function(err) {
         throw err;
     })
 
-
-function mouseDate(scale) {
+function getMousePos() {
     var g = d3.select("#group")._groups[0][0];
-    var x0 = scale.invert(d3.mouse(g)[0]);  // d3.mouse(g)[0] ... relative x-pos in main line chart
-    var i = bisectDate(dataslice, x0, 1);
-    i = Math.min(...[i, dataslice.length-1]);    
-    var d = x0 - dataslice[i-1][dataKeys[0]] > dataslice[i][dataKeys[0]] - x0 ? dataslice[i] : dataslice[i-1];
-    return [d, d3.mouse(g)];
+    return d3.mouse(g);
+}
+
+function getDataPointAtLocation(data,scale, mxy) {
+    var x0 = scale.invert(mxy[0]);
+    var i = bisectDate(data, x0, 1);
+    i = Math.min(...[i, data.length-1]);    
+    var d = x0 - data[i-1][dataKey] > data[i][dataKey] - x0 ? data[i] : data[i-1];
+    return d;
 }
 
 function mousemove() {
-    [d,mxy] = mouseDate(x);
+    mxy = getMousePos();
     
     if (invalidCapturePts == true) {
         for (var sensor of sensorList) {
@@ -387,7 +399,7 @@ function mousemove() {
     }
 
     // Find curve with distance smaller than constMinDist
-    var loopKeys = dataKeysNoTime;
+    var loopKeys = sensorList;
     if (lastActiveCurve != "None") {
         loopKeys = [];
         loopKeys.push(lastActiveCurve);
@@ -406,8 +418,12 @@ function mousemove() {
     }
 
     console.log(lastActiveCurve);
+    //console.log(d);
         
     if( activeCurve != "None" ) {   
+        
+        dataPoint = getDataPointAtLocation(dataslice[activeCurve],x,mxy);
+        
         d3.selectAll(".line_" + activeCurve)
             .style('opacity', 1.0);
         d3.select(this)
@@ -417,33 +433,26 @@ function mousemove() {
 
         tip.style("display", null);
 
-        // show y-axis
-        focus.select(".axis--y_" + activeCurve).style("display",null)
-        // show y-axis label
-        svg.select(".y-axis-label").style("display",null);
-        // set y-axis label text
-        svg.select(".y-axis-label").text(activeCurve);
-
         tip.select("circle")
             .style("fill", d3.selectAll(".line_" + activeCurve).style('stroke'))
             .style("stroke", d3.selectAll(".line_" + activeCurve).style('stroke'))
             .attr('cx', function() {
-                                    return x(d[timeKey]);
+                                    return x(dataPoint[timeKey]);
                                     //return pos.x;
                                 })
             .attr('cy', function() {
-                                    return y(d[activeCurve]);
+                                    return y(dataPoint[dataKey]);
                                     //return pos.y;
                                 });
 
         tip.select("text")
-             .text(formatDataString(d,activeCurve))
+             .text(formatDataString(dataPoint,dataKey))
              .attr('x', function() {
-                                    return x(d[dataKeys[0]])+10;
+                                    return x(dataPoint[timeKey])+10;
                                     //return pos.x + 10;
              })
              .attr('y', function() {
-                                     return y(d[activeCurve])-10;
+                                     return y(dataPoint[dataKey])-10;
                                      //return pos.y;
              });
 
@@ -458,12 +467,12 @@ function mousemove() {
         tip.style("display", "none");  
 
         // hide y-axis
-        focus.select(".axis--y").style("display","none");
+        //focus.select(".axis--y").style("display","none");
         // hide x-axis
         //focus.select(".axis--x").style("display","none");
 
         // hide y-axis label
-        svg.select(".y-axis-label").style("display","none");
+        //svg.select(".y-axis-label").style("display","none");
     }
 }
 
@@ -484,17 +493,17 @@ function zoomed() {
                        dataperm[sensor].findIndex(d => d[timeKey].getTime() >= domain[1].getTime()) ];    
 
         if ( (drange[1]-drange[0]) > nMaxPts ) {
-            dataslice = reduceArray( dataperm[sensor], drange, nMaxPts );
+            dataslice[sensor] = reduceArray( dataperm[sensor], drange, nMaxPts );
 
         } else {
-            dataslice = dataperm[sensor].slice(drange[0], drange[1]);
+            dataslice[sensor] = dataperm[sensor].slice(drange[0], drange[1]);
         }
         
-        chartBody.select(".line_" + sensor).attr("d", d3_line[sensor].Line(dataslice));
+        chartBody.select(".line_" + sensor).attr("d", d3_line[sensor].Line(dataslice[sensor]));
         
         if ( isChecked == true ) {
                 // TODO: implement getYRange for combined data
-                //y.domain(getYRange( dataslice, dataKey, 2 ));        
+                //y.domain(getYRange( dataslice[sensor], dataKey, 2 ));        
         } 
     }
     
@@ -504,12 +513,12 @@ function zoomed() {
         tip.select("circle")
             .classed("zoomed", true)
             .attr("id","one")
-            .attr('cx', function() {return x(d[timeKey]); })
-            .attr('cy', function() {return d3_line[lastActiveCurve].Scale(d[lastActiveCurve]); });                
+            .attr('cx', function() {return x(dataPoint[timeKey]); })
+            .attr('cy', function() {return y(dataPoint[dataKey]); });                
         tip.select("text")
-            .text(formatDataString(d,lastActiveCurve))
-            .attr('x', function() {return x(d[timeKey])+10;})
-            .attr('y', function() {return d3_line[lastActiveCurve].Scale(d[lastActiveCurve])-10; });
+            .text(formatDataString(d,dataKey))
+            .attr('x', function() {return x(dataPoint[timeKey])+10;})
+            .attr('y', function() {return y(dataPoint[dataKey])-10; });
     }
     
     // update axes
@@ -543,17 +552,17 @@ function brushed() {
                        dataperm[sensor].findIndex(d => d[timeKey].getTime() >= domain[1].getTime()) ];    
 
         if ( (drange[1]-drange[0]) > nMaxPts ) {
-            dataslice = reduceArray( dataperm[sensor], drange, nMaxPts );
+            dataslice[sensor] = reduceArray( dataperm[sensor], drange, nMaxPts );
 
         } else {
-            dataslice = dataperm[sensor].slice(drange[0], drange[1]);
+            dataslice[sensor] = dataperm[sensor].slice(drange[0], drange[1]);
         }
         
-        chartBody.select(".line_" + sensor).attr("d", d3_line[sensor].Line(dataslice));
+        chartBody.select(".line_" + sensor).attr("d", d3_line[sensor].Line(dataslice[sensor]));
         
         if ( isChecked == true ) {
                 // TODO: implement getYRange for combined data
-                //y.domain(getYRange( dataslice, dataKey, 2 ));        
+                //y.domain(getYRange( dataslice[sensor], dataKey, 2 ));        
         } 
     }
     
@@ -578,8 +587,8 @@ function on_checkbox() {
         isChecked = true;
         // update plots scaling
         for (var sensor of sensorList) {
-            d3_line[key].Scale.domain(getYRange( dataslice, key, 2 ));
-            chartBody.select(".line_" + key).attr("d", d3_line[key].Line(dataslice));
+            d3_line[key].Scale.domain(getYRange( dataslice[sensor], key, 2 ));
+            chartBody.select(".line_" + key).attr("d", d3_line[key].Line(dataslice[sensor]));
         }        
         
     } else {
