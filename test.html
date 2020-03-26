@@ -414,7 +414,8 @@ function mousemove() {
 
     var activeCurve = "None";
     for (var key of loopKeys) {
-        var dist = getXYDist(isoLenPts[key],mxy)[1];        
+        var dist = getXYDist(isoLenPts[key],mxy)[1];
+        console.log(dist);        
         if (dist < constMinDist) {
             activeCurve = key;
             lastActiveCurve = key;
@@ -424,7 +425,8 @@ function mousemove() {
         }
     }
 
-    console.log(lastActiveCurve);
+    console.log(activeCurve);
+    //console.log(lastActiveCurve);
     //console.log(d);
         
     if( activeCurve != "None" ) {   
@@ -674,6 +676,7 @@ function getXYDist( xyarray, mxy ){
         xydist.push( dist );
     });
     return [xydist, max, maxind];
+    //return xydist;
 }
 
 function getPointsOnPath( path, dlen ) {
