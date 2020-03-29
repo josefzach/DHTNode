@@ -409,8 +409,14 @@ function getMousePos() {
 function getDataPointAtLocation(data,scale, mxy) {
     var x0 = scale.invert(mxy[0]);
     var i = bisectDate(data, x0, 1);
+    
     i = Math.min(...[i, data.length-1]);
-    var d = x0 - data[i-1][timeKey] > data[i][timeKey] - x0 ? data[i] : data[i-1];
+    
+    if( data.length < 2 ) {  
+        return data[0];
+    } else {
+        var d = x0 - data[i-1][timeKey] > data[i][timeKey] - x0 ? data[i] : data[i-1];
+    }
     return d;
 }
 
@@ -451,8 +457,15 @@ function mousemove() {
 */
  
     tipData = [];
-    for( var sensor of sensorList ) {  
-        tipData.push( getDataPointAtLocation(dataslice[sensor],x,mxy) );
+    for( var sensor of sensorList ) {
+        if( dataslice[sensor].length > 0 ) {  
+            tipData.push( getDataPointAtLocation(dataslice[sensor],x,mxy) );
+        } else {
+            dummyData = {};
+            dummyData[timeKey] = parseTime("0000-00-00T00:00:00");
+            dummyData[dataKey] = 0;
+            tipData.push( dummyData );
+        }
     }  
       
     //console.log(tipData);
