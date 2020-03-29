@@ -191,6 +191,7 @@ document.getElementById("autoscale").style.visibility = "hidden";
 
 var dataperm = [];
 var dataslice = [];
+var tipData = [];
 
 var sensorList = ["ESP-7E4A1E", "ESP-7E48B0", "ESP-7E4480"];
 var dataKey = "Temperature";
@@ -203,11 +204,6 @@ for( var sensor of sensorList ) {
 
 Promise.all( fcnArray )
     .then(function(files) {
-        
-        // for each file
-        for ( var data of files ) {
-            
-        }
         
         // global data copy
         for( var sensorIdx = 0; sensorIdx < sensorList.length; sensorIdx++ ) {
@@ -250,7 +246,7 @@ Promise.all( fcnArray )
             
             concatxDomains = concatxDomains.concat( d3_line[sensor].xDomain );
             concatyDomains = concatyDomains.concat( d3_line[sensor].yDomain ); 
-            console.log(concatyDomains);
+            //console.log(concatyDomains);
         }
 
         // Scale the range of the combined data
@@ -314,18 +310,43 @@ Promise.all( fcnArray )
             .style("font-size","12px")
             .style("text-anchor", "middle")
 
-        tip.append("circle")
-            .attr("class", "y")
-            .style("fill", "none")
-            .style("stroke", "steelblue")
-            .attr("r", 3.5)
-            .attr("clip-path", "url(#clip)");    
-            
-        tip.append("text")
-            .attr("class", "y")
-            .attr("dy", ".35em")
-            .attr("clip-path", "url(#clip)");   // Obsolete?
+//        var tipPerLine = mouseG.selectAll('.tip-per-line')
+//          .data(cities)
+//          .enter()
+//          .append("g")
+//          .attr("class", "tip-per-line");
 
+//    mousePerLine.append("circle")
+//      .attr("r", 7)
+//      .style("stroke", function(d) {
+//        return color(d.name);
+//      })
+//      .style("fill", "none")
+//      .style("stroke-width", "1px")
+//      .style("opacity", "0");
+               
+        tip.selectAll("toolTips")
+            .data([dataperm["ESP-7E4A1E"][0],dataperm["ESP-7E48B0"][0],dataperm["ESP-7E4480"][0]])
+            .enter()
+                .append("circle")
+                .attr("class", "y")
+                .style("fill", d3.selectAll(".line_ESP-7E4A1E").style('stroke'))
+                .style("stroke", d3.selectAll(".line_ESP-7E4A1E").style('stroke'))
+                .attr('cx', function(d) { return x(d[timeKey]); } )
+                .attr('cy', function(d) { return y(d[dataKey]); } )
+                .attr("r", 3);
+
+        tip.selectAll("toolTips")
+            .data([dataperm["ESP-7E4A1E"][0],dataperm["ESP-7E48B0"][0],dataperm["ESP-7E4480"][0]])
+            .enter()         
+                .append("text")
+                .text("TEST")
+                .attr("class", "y")
+                .attr("dy", ".35em")
+                .attr("clip-path", "url(#clip)")   // Obsolete?
+                .attr('x', function(d) { return x(d[timeKey]); } )
+                .attr('y', function(d) { return y(d[dataKey]); } );
+    
         svg.append("rect")
             .attr("id","rect")
             .attr("class", "zoom")
@@ -388,14 +409,15 @@ function getMousePos() {
 function getDataPointAtLocation(data,scale, mxy) {
     var x0 = scale.invert(mxy[0]);
     var i = bisectDate(data, x0, 1);
-    i = Math.min(...[i, data.length-1]);    
-    var d = x0 - data[i-1][dataKey] > data[i][dataKey] - x0 ? data[i] : data[i-1];
+    i = Math.min(...[i, data.length-1]);
+    var d = x0 - data[i-1][timeKey] > data[i][timeKey] - x0 ? data[i] : data[i-1];
     return d;
 }
 
 function mousemove() {
     mxy = getMousePos();
     
+    /*
     if (invalidCapturePts == true) {
         for (var sensor of sensorList) {
             path=chartBody.select(".line_" + sensor).node();
@@ -426,54 +448,70 @@ function mousemove() {
     }
 
     console.log(activeCurve);
-    //console.log(lastActiveCurve);
-    //console.log(d);
-        
-    if( activeCurve != "None" ) {   
-        
-        dataPoint = getDataPointAtLocation(dataslice[activeCurve],x,mxy);
-        
-        d3.selectAll(".line_" + activeCurve)
-            .style('opacity', 1.0);
-        d3.select(this)
-            .style('opacity', 0.0)
-            .style("stroke-width", 5)
-            .style("cursor", "pointer");
+*/
+ 
+    tipData = [];
+    for( var sensor of sensorList ) {  
+        tipData.push( getDataPointAtLocation(dataslice[sensor],x,mxy) );
+    }  
+      
+    //console.log(tipData);
+    
+    tip.selectAll("circle")
+        .data( tipData )
+            .style("fill", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .style("stroke", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .attr('cx', function(d) { return x(d[timeKey]); } )
+            .attr('cy', function(d) { return y(d[dataKey]); } )
+            .attr("r", 3);
 
-        tip.style("display", null);
+    tip.selectAll("text")
+        .data( tipData )         
+            .text( function(d,i) { return formatDataString(d,dataKey); } )
+            .attr("dy", ".35em")
+            .attr("clip-path", "url(#clip)")   // Obsolete?
+            .attr('x', function(d) { return x(d[timeKey]) + 10; } )
+            .attr('y', function(d) { return y(d[dataKey]) - 10; } );
+            
+    tip.style("display", null);
 
-        tip.select("circle")
-            .style("fill", d3.selectAll(".line_" + activeCurve).style('stroke'))
-            .style("stroke", d3.selectAll(".line_" + activeCurve).style('stroke'))
-            .attr('cx', function() {
-                                    return x(dataPoint[timeKey]);
-                                    //return pos.x;
-                                })
-            .attr('cy', function() {
-                                    return y(dataPoint[dataKey]);
-                                    //return pos.y;
-                                });
+/*            
+    d3.selectAll(".line_" + sensor)
+        .style('opacity', 1.0);
+    d3.select(this)
+        .style('opacity', 0.0)
+        .style("stroke-width", 5)
+        .style("cursor", "pointer");
 
-        tip.select("text")
-             .text(formatDataString(dataPoint,dataKey))
-             .attr('x', function() {
-                                    return x(dataPoint[timeKey])+10;
-                                    //return pos.x + 10;
-             })
-             .attr('y', function() {
-                                     return y(dataPoint[dataKey])-10;
-                                     //return pos.y;
-             });
+    tip.style("display", null);
 
-    } else {
-        d3.selectAll('.line')
-            .style('opacity', 0.4);
-        d3.select(this)
-            .style('opacity', 0.4)
-            .style("stroke-width", 2)
-            .style("cursor", "pointer");  
+    tip.select("circle")
+        .style("fill", d3.selectAll(".line_" + sensor).style('stroke'))
+        .style("stroke", d3.selectAll(".line_" + sensor).style('stroke'))
+        .attr('cx', function() { return x(dataPoint[timeKey]); } )
+        .attr('cy', function() { return y(dataPoint[dataKey]); } );
+
+    tip.select("text_" + sensor)
+         .text(formatDataString(dataPoint,dataKey))
+         .attr('x', function() {
+                                return x(dataPoint[timeKey])+10;
+                                //return pos.x + 10;
+         })
+         .attr('y', function() {
+                                 return y(dataPoint[dataKey])-10;
+                                 //return pos.y;
+         });
+*/
+
+//    } else {
+//        d3.selectAll('.line')
+//            .style('opacity', 0.4);
+//        d3.select(this)
+//            .style('opacity', 0.4)
+//            .style("stroke-width", 2)
+//            .style("cursor", "pointer");  
         
-        tip.style("display", "none");  
+//        tip.style("display", "none");  
 
         // hide y-axis
         //focus.select(".axis--y").style("display","none");
@@ -482,7 +520,7 @@ function mousemove() {
 
         // hide y-axis label
         //svg.select(".y-axis-label").style("display","none");
-    }
+//    }
 }
 
 function zoomed() {
@@ -516,19 +554,21 @@ function zoomed() {
         } 
     }
     
+    tip.selectAll("circle")
+        .data( tipData )
+            .style("fill", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .style("stroke", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .attr('cx', function(d) { return x(d[timeKey]); } )
+            .attr('cy', function(d) { return y(d[dataKey]); } )
+            .attr("r", 3);
 
-    // update mouseover circle and text position while zoomed
-    if (lastActiveCurve != "None") {
-        tip.select("circle")
-            .classed("zoomed", true)
-            .attr("id","one")
-            .attr('cx', function() {return x(dataPoint[timeKey]); })
-            .attr('cy', function() {return y(dataPoint[dataKey]); });                
-        tip.select("text")
-            .text(formatDataString(d,dataKey))
-            .attr('x', function() {return x(dataPoint[timeKey])+10;})
-            .attr('y', function() {return y(dataPoint[dataKey])-10; });
-    }
+    tip.selectAll("text")
+        .data( tipData )         
+            .text( function(d,i) { return formatDataString(d,dataKey); } )
+            .attr("dy", ".35em")
+            .attr("clip-path", "url(#clip)")   // Obsolete?
+            .attr('x', function(d) { return x(d[timeKey]) + 10; } )
+            .attr('y', function(d) { return y(d[dataKey]) - 10; } );
     
     // update axes
     focus.select(".axis--x").call(xAxis);
