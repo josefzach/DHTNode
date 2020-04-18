@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+
+<div id="chart"></div>
+
+<style>
+body {
+    font: 10px Arial; 
+}
+
+.view {
+    fill: rgba(255, 255, 255, 0.2);
+}
+
+.axis path {
+    display: none;
+}
+
+.axis line {
+    stroke-opacity: 0.3;
+}
+
+.line_ESP-7E4A1E {
+    fill: none;
+    stroke: #ffab00;
+    stroke-width: 2px;
+    stroke-opacity: 1.0;
+}
+
+.line_ESP-7E48B0 {
+    fill: none;
+    stroke: #b700ff;
+    stroke-width: 2px;
+    stroke-opacity: 1.0;
+}
+
+.line_ESP-7E4480 {
+    fill: none;
+    stroke: #00ffcc;
+    stroke-width: 2px;
+    stroke-opacity: 1.0;
+}
+
+.line_Speed {
+    fill: none;
+    stroke: #55fdff;
+    stroke-width: 2px;
+    stroke-opacity: 1.0;
+}
+
+.ctxt_line_Temperature {
+    fill: none;
+    stroke: #ffab00;
+    stroke-width: 1px;
+}
+
+.ctxt_line_Humidity {
+    fill: none;
+    stroke: #b700ff;
+    stroke-width: 1px;
+}
+
+.zoom {
+    fill: none;
+    pointer-events: all;
+}
+
+.reset {
+    position: absolute;
+}
+
+.autoscale {
+    position: absolute;
+}
+
+</style>
+
+<body>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+
+<button id="reset" class="reset" onclick="resetted()">Reset</button>
+<div id="autoscale" class="autoscale">
+    <input type="checkbox" id="myCheckBox" name="myCheckBox" onclick="on_checkbox()" checked>
+    <label for="myCheckBox">Autoscale Y</label>
+</div>
+
+<!div id="dataviz_buttonTriger"><!/div>
+
+<svg width="1000" height="600"></svg>
+
+<script>
+
+var nMaxPts = 200;
+var constMinDist = 20;
+var invalidCapturePts = true;
+var lastActiveCurve = "None";
+
+var isChecked = true;
+
+var isoLenPts = [];
+
+var svg = d3.select("svg"),
+    focusHeight = +svg.attr("height") * 0.7,
+    contextHeight = +svg.attr("height") - focusHeight;
+    totalWidth = +svg.attr("width"),
+    margin = {top: 20, right: 20, bottom: contextHeight, left: 40},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom,
+    margin2 = {top: focusHeight+30, right: 20, bottom: 40, left: 40},
+    height2 = +svg.attr("height") - margin2.top - margin2.bottom;
+
+var svg = d3.select("svg")
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .append("svg:g")
+    .attr("id","group")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S");
+    bisectDate = d3.bisector(function(d) { return d[timeKey]; }).left;
+    formatValue = d3.format(",.2f"),
+    
+    formatDataString = function(d,key) {
+        var unitString = ""; 
+        if (key == 'Temperature') {
+            unitString = "°";
+        } else if (key == 'Humidity') {
+            unitString = "%";
+        } else {
+            unitString = "";        
+        }
+        return formatValue(d[key]) + unitString;
+    };
+    
+var x = d3.scaleTime().range([0, width]),
+    x_ctxt = d3.scaleTime().range([0, width]),
+    y = d3.scaleLinear().range([height, 0]),
+    y_ctxt = d3.scaleLinear().range([height2, 0]);
+    
+var d3_line = [];
+var d3_ctxt_line = [];
+
+var zoom = d3.zoom()
+    .scaleExtent([1, Infinity])
+    .translateExtent([[0, 0], [width, height]])
+    .extent([[0, 0], [width, height]])
+    .on("zoom", zoomed);    
+
+var brush = d3.brushX()
+    .extent([[0, 0], [width, height2]])
+    .on("brush end", brushed);
+    
+var xAxis = d3.axisBottom(x)
+    .ticks((width + 2) / (height + 2) * 5)
+    .tickSize(-height)
+    .tickPadding(10);
+
+var xAxis_Ctxt = d3.axisBottom(x_ctxt);
+
+var yAxis = d3.axisRight(y)
+    .ticks(5)
+    .tickSize(width)
+    .tickPadding(- 20 - width);     
+                 
+var view = svg.append("rect")
+    .attr("class", "view")
+    .attr("x", 0.5)
+    .attr("y", 0.5)
+    .attr("width", width - 1)
+    .attr("height", height - 1);
+
+var chartBody = svg.append("g")
+    .attr("class", "focus")
+    .attr("clip-path", "url(#clip)");
+
+var focus = svg.append("g") 
+    .attr("class", "focus")
+
+var context = svg.append("g")
+    .attr("class", "context")
+    .attr("transform", "translate(" + 0 + "," + margin2.top + ")");
+
+var tip = svg.append("g") 
+    .attr("class", "tip")
+    .style("display", "none")
+
+document.getElementById("reset").style.visibility = "hidden";
+document.getElementById("autoscale").style.visibility = "hidden";
+
+var dataperm = [];
+var dataslice = [];
+var tipData = [];
+
+var sensorList = ["ESP-7E4A1E", "ESP-7E48B0", "ESP-7E4480"];
+var dataKey = "Humidity";
+var timeKey = "Timestamp";
+
+fcnArray = [];
+for( var sensor of sensorList ) { 
+    fcnArray.push(d3.csv(sensor+".node"));
+}
+
+Promise.all( fcnArray )
+    .then(function(files) {
+        
+        // global data copy
+        for( var sensorIdx = 0; sensorIdx < sensorList.length; sensorIdx++ ) {
+            sensor = sensorList[sensorIdx];
+            dataperm[ sensor ] = files[ sensorIdx ];
+            
+            // TODO: remove all unneded keys from dataperm
+        }
+        
+        var concatxDomains = [];
+        var concatyDomains = [];
+        
+        for( var sensor of sensorList ) {
+            // convert data from string to corresponding format
+            dataperm[sensor].forEach(function(d,i) {
+                d[timeKey] = parseTime(d[timeKey]);
+                d[dataKey] = +d[dataKey];
+                d["Humidity"] = +d["Humidity"];
+            });   
+
+            // load d3 lines, scales and axes per dataset
+            // initialize lines
+            d3_line[sensor] = [];
+            d3_line[sensor].Line = d3.line()
+                .defined(function(d) { return d[dataKey] != 0; })
+                .x(new Function('d', 'return x(d["'+timeKey+'"]);'))
+                .y(new Function('d', 'return y(d["'+dataKey+'"]);'))
+                .curve(d3.curveMonotoneX);
+            d3_line[sensor].xDomain = d3.extent(dataperm[sensor], function(d) { return d[timeKey]; });
+            d3_line[sensor].yDomain = getYRange( dataperm[sensor], dataKey, 2 ); //TODO: fix margin
+                
+            // initialize context lines
+            d3_ctxt_line[sensor] = [];
+            // no axis
+            d3_ctxt_line[sensor].Line = d3.line()
+                .defined(function(d) { return d[dataKey] != 0; })
+                .x(new Function('d', 'return x_ctxt(d["'+timeKey+'"]);'))
+                .y(new Function('d', 'return y_ctxt(d["'+dataKey+'"]);'))
+                .curve(d3.curveMonotoneX);            
+            
+            concatxDomains = concatxDomains.concat( d3_line[sensor].xDomain );
+            concatyDomains = concatyDomains.concat( d3_line[sensor].yDomain ); 
+            //console.log(concatyDomains);
+        }
+
+        // Scale the range of the combined data
+        x.domain( d3.extent( concatxDomains ) );
+        x_ctxt.domain( x.domain() );
+
+        y.domain( [ d3.min( concatyDomains ), d3.max( concatyDomains ) ] );
+        y_ctxt.domain( y.domain() );
+
+
+        focus.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+
+        context.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + height2 + ")")
+            .call(xAxis_Ctxt);
+
+        focus.append("g")
+            .attr("class", "axis axis--y")
+            .call(yAxis);
+            
+        for (var sensor of sensorList) {
+            chartBody.append("path")
+                .datum(reduceArray( dataperm[sensor], [0,dataperm[sensor].length], nMaxPts ))
+                .attr("class", "line_" + sensor)
+                .attr("d", d3_line[sensor].Line);
+        
+            context.append("path")
+            .datum(reduceArray( dataperm[sensor], [0,dataperm[sensor].length], nMaxPts ))
+            .attr("class", "ctxt_line_" + sensor)
+            .attr("d", d3_ctxt_line[sensor].Line);
+        }
+
+        context.append("g")
+            .attr("class", "brush")
+            .call(brush)
+            .call(brush.move, x.range());
+            
+        svg.append("defs").append("clipPath")
+            .attr("id", "clip")
+            .append("rect")
+            .attr("width", width)
+            .attr("height", height);
+
+        svg.append("text")             
+            .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 20) + ")")
+            .style("font-size","12px")
+            .style("font-family", "sans-serif")
+            .style("text-anchor", "middle")
+            .text("Date/Time");
+          
+        svg.append("text")
+            .attr("class", "y-axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left/1)
+            .attr("x",0 - (height / 2))
+            .attr("dy", "1em")
+            .style("font-size","12px")
+            .style("text-anchor", "middle")
+
+//        var tipPerLine = mouseG.selectAll('.tip-per-line')
+//          .data(cities)
+//          .enter()
+//          .append("g")
+//          .attr("class", "tip-per-line");
+
+//    mousePerLine.append("circle")
+//      .attr("r", 7)
+//      .style("stroke", function(d) {
+//        return color(d.name);
+//      })
+//      .style("fill", "none")
+//      .style("stroke-width", "1px")
+//      .style("opacity", "0");
+               
+        tip.selectAll("toolTips")
+            .data([dataperm["ESP-7E4A1E"][0],dataperm["ESP-7E48B0"][0],dataperm["ESP-7E4480"][0]])
+            .enter()
+                .append("circle")
+                .attr("class", "y")
+                .style("fill", d3.selectAll(".line_ESP-7E4A1E").style('stroke'))
+                .style("stroke", d3.selectAll(".line_ESP-7E4A1E").style('stroke'))
+                .attr('cx', function(d) { return x(d[timeKey]); } )
+                .attr('cy', function(d) { return y(d[dataKey]); } )
+                .attr("r", 3);
+
+        tip.selectAll("toolTips")
+            .data([dataperm["ESP-7E4A1E"][0],dataperm["ESP-7E48B0"][0],dataperm["ESP-7E4480"][0]])
+            .enter()         
+                .append("text")
+                .text("TEST")
+                .attr("class", "y")
+                .attr("dy", ".35em")
+                .attr("clip-path", "url(#clip)")   // Obsolete?
+                .attr('x', function(d) { return x(d[timeKey]); } )
+                .attr('y', function(d) { return y(d[dataKey]); } );
+    
+        svg.append("rect")
+            .attr("id","rect")
+            .attr("class", "zoom")
+            .attr("width", width)
+            .attr("height", height)
+            //.style("fill", "none")
+            //.style("pointer-events", "all")
+            //.on("mouseover", function() { tip.style("display", null); })
+            .on("mouseout", function() { tip.style("display", "none");
+                                         //focus.select(".axis--y").style("display","none");
+                                         })
+            .on("mousemove", mousemove)
+            .call(zoom);
+
+
+        // plot x-axis
+        focus.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x).ticks(0));
+              
+        // plot y-axis lhs
+        focus.append("g")
+            .call(d3.axisLeft(y).ticks(0));
+      
+            
+        document.getElementById("reset").style.visibility = "";
+        document.getElementById("reset").style.top = "30px";
+        document.getElementById("reset").style.left = totalWidth-100+"px";
+
+        document.getElementById("autoscale").style.visibility = "";
+        document.getElementById("autoscale").style.top = "60px";
+        document.getElementById("autoscale").style.left = totalWidth-100+"px";
+        
+        for (var sensor of sensorList) {
+            path=chartBody.select(".line_" + sensor).node();
+            isoLenPts[sensor] = getPointsOnPath(path, 2 * constMinDist - 1);
+        }
+        
+        //focus.select(".axis--y").style("display","none");
+        
+        // hide y-axis label per default
+        //svg.select(".y-axis-label").style("display","none"); 
+
+        // show y-axis
+        focus.select(".axis--y").style("display",null)
+        // show y-axis label
+        svg.select(".y-axis-label").style("display",null);
+        // set y-axis label text
+        svg.select(".y-axis-label").text(dataKey);
+                               
+    }).catch(function(err) {
+        throw err;
+    })
+
+function getMousePos() {
+    var g = d3.select("#group")._groups[0][0];
+    return d3.mouse(g);
+}
+
+function getDataPointAtLocation(data,scale, mxy) {
+    var x0 = scale.invert(mxy[0]);
+    var i = bisectDate(data, x0, 1);
+    
+    i = Math.min(...[i, data.length-1]);
+    
+    if( data.length < 2 ) {  
+        return data[0];
+    } else {
+        var d = x0 - data[i-1][timeKey] > data[i][timeKey] - x0 ? data[i] : data[i-1];
+    }
+    return d;
+}
+
+function mousemove() {
+    mxy = getMousePos();
+    
+    /*
+    if (invalidCapturePts == true) {
+        for (var sensor of sensorList) {
+            path=chartBody.select(".line_" + sensor).node();
+            isoLenPts[sensor] = getPointsOnPath(path, 2 * constMinDist - 1);
+        }
+        invalidCapturePts = false;
+        console.log("CAPTURE POINTS READY");
+    }
+
+    // Find curve with distance smaller than constMinDist
+    var loopKeys = sensorList;
+    if (lastActiveCurve != "None") {
+        loopKeys = [];
+        loopKeys.push(lastActiveCurve);
+    }
+
+    var activeCurve = "None";
+    for (var key of loopKeys) {
+        var dist = getXYDist(isoLenPts[key],mxy)[1];
+        console.log(dist);        
+        if (dist < constMinDist) {
+            activeCurve = key;
+            lastActiveCurve = key;
+            break;
+        } else {
+            lastActiveCurve = "None";
+        }
+    }
+
+    console.log(activeCurve);
+*/
+ 
+    tipData = [];
+    for( var sensor of sensorList ) {
+        if( dataslice[sensor].length > 0 ) {  
+            tipData.push( getDataPointAtLocation(dataslice[sensor],x,mxy) );
+        } else {
+            dummyData = {};
+            dummyData[timeKey] = parseTime("0000-00-00T00:00:00");
+            dummyData[dataKey] = 0;
+            tipData.push( dummyData );
+        }
+    }  
+      
+    //console.log(tipData);
+    
+    tip.selectAll("circle")
+        .data( tipData )
+            .style("fill", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .style("stroke", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .attr('cx', function(d) { return x(d[timeKey]); } )
+            .attr('cy', function(d) { return y(d[dataKey]); } )
+            .attr("r", 3);
+
+    tip.selectAll("text")
+        .data( tipData )         
+            .text( function(d,i) { return formatDataString(d,dataKey); } )
+            .attr("dy", ".35em")
+            .attr("clip-path", "url(#clip)")   // Obsolete?
+            .attr('x', function(d) { return x(d[timeKey]) + 10; } )
+            .attr('y', function(d) { return y(d[dataKey]) - 10; } );
+            
+    tip.style("display", null);
+
+/*            
+    d3.selectAll(".line_" + sensor)
+        .style('opacity', 1.0);
+    d3.select(this)
+        .style('opacity', 0.0)
+        .style("stroke-width", 5)
+        .style("cursor", "pointer");
+
+    tip.style("display", null);
+
+    tip.select("circle")
+        .style("fill", d3.selectAll(".line_" + sensor).style('stroke'))
+        .style("stroke", d3.selectAll(".line_" + sensor).style('stroke'))
+        .attr('cx', function() { return x(dataPoint[timeKey]); } )
+        .attr('cy', function() { return y(dataPoint[dataKey]); } );
+
+    tip.select("text_" + sensor)
+         .text(formatDataString(dataPoint,dataKey))
+         .attr('x', function() {
+                                return x(dataPoint[timeKey])+10;
+                                //return pos.x + 10;
+         })
+         .attr('y', function() {
+                                 return y(dataPoint[dataKey])-10;
+                                 //return pos.y;
+         });
+*/
+
+//    } else {
+//        d3.selectAll('.line')
+//            .style('opacity', 0.4);
+//        d3.select(this)
+//            .style('opacity', 0.4)
+//            .style("stroke-width", 2)
+//            .style("cursor", "pointer");  
+        
+//        tip.style("display", "none");  
+
+        // hide y-axis
+        //focus.select(".axis--y").style("display","none");
+        // hide x-axis
+        //focus.select(".axis--x").style("display","none");
+
+        // hide y-axis label
+        //svg.select(".y-axis-label").style("display","none");
+//    }
+}
+
+function zoomed() {
+    // ignore zoom-by-brush
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; 
+
+    console.log("ZOOM");
+
+    var t = d3.event.transform;
+
+    x.domain(t.rescaleX(x_ctxt).domain());
+
+    var domain = x.domain();
+    
+    for( sensor of sensorList ) {
+        var drange = [ dataperm[sensor].findIndex(d => d[timeKey].getTime() >  domain[0].getTime()), 
+                       dataperm[sensor].findIndex(d => d[timeKey].getTime() >= domain[1].getTime()) ];    
+
+        if ( (drange[1]-drange[0]) > nMaxPts ) {
+            dataslice[sensor] = reduceArray( dataperm[sensor], drange, nMaxPts );
+
+        } else {
+            dataslice[sensor] = dataperm[sensor].slice(drange[0], drange[1]);
+        }
+        
+        chartBody.select(".line_" + sensor).attr("d", d3_line[sensor].Line(dataslice[sensor]));
+        
+        if ( isChecked == true ) {
+                // TODO: implement getYRange for combined data
+                //y.domain(getYRange( dataslice[sensor], dataKey, 2 ));        
+        } 
+    }
+    
+    tip.selectAll("circle")
+        .data( tipData )
+            .style("fill", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .style("stroke", function(d,i) { return d3.selectAll(".line_" + sensorList[i]).style('stroke') } )
+            .attr('cx', function(d) { return x(d[timeKey]); } )
+            .attr('cy', function(d) { return y(d[dataKey]); } )
+            .attr("r", 3);
+
+    tip.selectAll("text")
+        .data( tipData )         
+            .text( function(d,i) { return formatDataString(d,dataKey); } )
+            .attr("dy", ".35em")
+            .attr("clip-path", "url(#clip)")   // Obsolete?
+            .attr('x', function(d) { return x(d[timeKey]) + 10; } )
+            .attr('y', function(d) { return y(d[dataKey]) - 10; } );
+    
+    // update axes
+    focus.select(".axis--x").call(xAxis);
+    focus.select(".axis--y").call(yAxis);
+
+    // update context area
+    context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+    
+    invalidCapturePts = true;
+}
+
+function brushed() {
+    // ignore brush-by-zoom
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; 
+
+    console.log("BRUSH");
+
+    // re-map domain of x-axis
+    var s = d3.event.selection || x_ctxt.range();
+    x.domain(s.map(x_ctxt.invert, x_ctxt));
+
+    svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
+        .scale(width / (s[1] - s[0]))
+        .translate(-s[0], 0));
+
+    var domain = x.domain();    
+
+    for( sensor of sensorList ) {
+        var drange = [ dataperm[sensor].findIndex(d => d[timeKey].getTime() >  domain[0].getTime()), 
+                       dataperm[sensor].findIndex(d => d[timeKey].getTime() >= domain[1].getTime()) ];    
+
+        if ( (drange[1]-drange[0]) > nMaxPts ) {
+            dataslice[sensor] = reduceArray( dataperm[sensor], drange, nMaxPts );
+
+        } else {
+            dataslice[sensor] = dataperm[sensor].slice(drange[0], drange[1]);
+        }
+        
+        chartBody.select(".line_" + sensor).attr("d", d3_line[sensor].Line(dataslice[sensor]));
+        
+        if ( isChecked == true ) {
+                // TODO: implement getYRange for combined data
+                //y.domain(getYRange( dataslice[sensor], dataKey, 2 ));        
+        } 
+    }
+    
+    focus.select(".axis--x").call(xAxis);
+    focus.select(".axis--y").call(yAxis);
+}
+
+function resetted() {
+    d3.select("#rect").transition()
+        .duration(750)
+        .call(zoom.transform, d3.zoomIdentity);
+}
+
+function on_checkbox() {
+    // Get the checkbox
+    var checkBox = document.getElementById("myCheckBox");
+    // Get the output text
+    var text = document.getElementById("text");
+
+    // If the checkbox is checked, display the output text
+    if (checkBox.checked == true){
+        isChecked = true;
+        // update plots scaling
+        for (var sensor of sensorList) {
+            d3_line[key].Scale.domain(getYRange( dataslice[sensor], key, 2 ));
+            chartBody.select(".line_" + key).attr("d", d3_line[key].Line(dataslice[sensor]));
+        }        
+        
+    } else {
+        isChecked = false;
+    }
+}
+
+function linSpace(startValue, stopValue, cardinality) {
+    var arr = [];
+    var step = (stopValue - startValue) / (cardinality - 1);
+    for (var i = 0; i < cardinality; i++) {
+        arr.push(startValue + (step * i));
+    }
+    return arr;
+}
+
+function getVal( array, key ) {
+    var tarray = [];
+    for (var i=0; i < array.length; i=i+1) {
+        tarray[i] = parseFloat(array[i][key]);
+    }
+    return tarray;
+}
+
+const arrAvg = arr => arr.reduce((a,b) => a + b, 0) / arr.length
+
+function reduceArray( data, drange, nPts ) {
+    var ind = linSpace( drange[0], drange[1], nPts );
+
+    // return copy of original array if less than nPts datapoints
+    if ((drange[1]-drange[0]) <= nPts) {
+        return [...data]
+    }
+    
+    // TODO: duplicate indices
+    ind = ind.map(function(element){
+        return Math.round(element);
+        });
+
+    var rdata = [];
+    var el;
+    var sign;
+    
+    for (i = 0; i < ind.length-1; i=i+1) {
+        el = {...data[ind[i]]};
+
+        //for (var key of dataKeysNoTime) {
+                      // using max has performance advantage?
+                      //arrAvg( getTemp(data.slice(ind[i],ind[i+1])) );
+            
+            //el[key] = Math.max(...getVal(data.slice(ind[i],ind[i+1]), key) );
+        // get slice maximum
+        sign = Math.sign(...getVal(data.slice(ind[i],ind[i+1]), dataKey) );  
+        el[dataKey] = sign * Math.max( Math.abs(...getVal(data.slice(ind[i],ind[i+1]), dataKey) ) );              
+        //}
+        rdata.push(el);
+    }
+    return rdata;
+}
+
+function getYRange( data, key, margin ){
+    return [d3.min(data, function (d) { return d[key]; })-margin, d3.max(data, function (d) { return d[key]; })+margin];
+}
+
+function getXYDist( xyarray, mxy ){
+    var xydist = [];
+    var max = 1e100;
+    var dist;
+    var maxind;
+    xyarray.forEach(function(d,index) {
+        dist = Math.sqrt( Math.pow(d.x-mxy[0],2) + Math.pow(d.y-mxy[1],2) );
+        if ( dist < max ){
+            max = dist;
+            maxind = index;
+        }
+        xydist.push( dist );
+    });
+    return [xydist, max, maxind];
+    //return xydist;
+}
+
+function getPointsOnPath( path, dlen ) {
+    totLen = path.getTotalLength();
+    var ptarray = [];
+    
+    for (let len = 0; len < totLen; len = len + dlen) {
+        ptarray.push( path.getPointAtLength(len) );
+    }
+    return ptarray;
+}
+
+</script>
+</body>
